@@ -55,9 +55,11 @@ or merge or rebase `main` into the branch locally. CI then runs again on the com
 before the pull request can merge. This stops a pull request from silently undoing work that
 landed after it was opened.
 
-The owner may merge their own pull requests without a second review, because no one else holds
-authority over owner-only files. Owner pull requests still go through a branch, CI, and the
-up-to-date check.
+The owner can't approve their own pull requests, and owner-only files have no other reviewer,
+so the owner is allowed to bypass the merge requirements on a pull request. The bypass works
+only through a pull request (the owner can't push to `main` directly either), and GitHub records
+every bypass. By convention the owner still waits for green CI and an up-to-date branch, and
+uses the bypass only for the missing second review or to fix broken CI.
 
 ## What can't be changed without the owner
 
