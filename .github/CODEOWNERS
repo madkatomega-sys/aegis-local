@@ -1,0 +1,30 @@
+# Code owners decide who can approve a pull request. The main-branch ruleset requires an
+# approving review from a code owner for every file a pull request changes.
+#
+# Roles (see GOVERNANCE.md):
+#   owner            @madkatomega-sys
+#   pr-approver      may approve code, docs, and config changes
+#   contrib-approver may approve additions to the approved-contributors list
+#
+# To add someone to a role: invite them as a collaborator with the "Write" role (code owners
+# must have write access), then add their @username to the matching lines below in a pull
+# request. Changes to this file always need the owner's approval.
+#
+# The last matching pattern wins, so the general rule comes first.
+
+# Everything: the owner or a pr-approver.
+# pr-approvers: add usernames after the owner on this line.
+*                                       @madkatomega-sys
+
+# Governance, licensing, CI, and repository rules: the owner only.
+/.github/                               @madkatomega-sys
+/LICENSE                                @madkatomega-sys
+/NOTICE                                 @madkatomega-sys
+/GOVERNANCE.md                          @madkatomega-sys
+/CONTRIBUTING.md                        @madkatomega-sys
+/CODE_OF_CONDUCT.md                     @madkatomega-sys
+/SECURITY.md                            @madkatomega-sys
+
+# Approved contributors: the owner or a contrib-approver.
+# contrib-approvers: add usernames after the owner on this line.
+/.github/approved-contributors.txt      @madkatomega-sys

@@ -41,17 +41,32 @@ docker compose config --quiet
 
 ## Pull requests
 
-1. Fork, then branch from `main` (`feature/<topic>` or `fix/<topic>`).
+Before your first pull request can be merged, you need to be on the approved contributor list.
+Open a **Contributor access request** issue; see [GOVERNANCE.md](GOVERNANCE.md#becoming-a-contributor).
+
+1. Fork, then create **one branch per pull request** from the latest `main`
+   (`feature/<topic>` or `fix/<topic>`). Nobody, including maintainers, pushes to `main` directly.
 2. Keep each PR to one concern. Split refactors from behavior changes.
 3. Run `ruff check .` and `pytest` locally.
 4. Update docs when behavior or configuration changes. If you change a design decision, update
    [docs/PLAN.md](docs/PLAN.md) in the same PR.
 5. Sign off every commit (see below).
 6. Fill in the pull request template, including how you tested and on which OS.
+7. **Keep your branch up to date with `main`.** A pull request can't merge until it contains
+   the latest `main` and CI has passed on the combined code. Use **Update branch** on the pull
+   request, or locally:
 
-A maintainer reviews every PR. Changes to the control plane need one approving review from a
-maintainer; changes to the guard proxy's policy logic should get two when two maintainers are
-available.
+   ```bash
+   git fetch upstream
+   git rebase upstream/main      # or: git merge upstream/main
+   git push --force-with-lease   # only needed after a rebase
+   ```
+
+To merge, a pull request needs an approving review from the owner or a pr-approver (the owner
+alone for governance and licensing files), passing CI on Linux and Windows, a green
+`contributor-approved` check, and every review conversation resolved. Changes to the guard
+proxy's policy logic should get two reviews when two approvers are available. The full rules
+are in [GOVERNANCE.md](GOVERNANCE.md).
 
 ## Developer Certificate of Origin
 
@@ -65,8 +80,8 @@ git commit -s -m "guard: detect three-step oscillation"
 ```
 
 This adds a line like `Signed-off-by: Your Name <you@example.com>`. Use your real name or a
-consistent public identity. Pull requests with unsigned commits can't be merged; fix them with
-`git commit --amend -s` or `git rebase --signoff main`.
+consistent public identity. Reviewers won't approve pull requests with unsigned commits; fix
+them with `git commit --amend -s` or `git rebase --signoff main`.
 
 ## Licensing of contributions
 
@@ -88,7 +103,6 @@ Never commit model weights, API keys, tokens, or personal data.
 
 ## Project governance
 
-The project is maintained by its founder and, as the community grows, by contributors invited as
-maintainers after a sustained record of good reviews and merged work. Decisions are made in issues
-and pull requests, in the open. When maintainers disagree, the founder decides, and the reasoning
-is written down in the relevant issue or in [docs/PLAN.md](docs/PLAN.md).
+Roles (owner, pr-approver, contrib-approver, approved contributor), what each can approve, and
+how the repository is protected are described in [GOVERNANCE.md](GOVERNANCE.md). Approvers are
+invited from contributors with a sustained record of good reviews and merged work.
