@@ -1,0 +1,37 @@
+name: Contributor gate
+
+# Runs on pull_request_target so the workflow definition and the approved list both come from
+# the target branch. A pull request can't change either one to let itself through.
+#
+# Security: this workflow never checks out or runs code from the pull request. It only reads
+# the approved list through the API at the base commit. Keep it that way.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  contributor-approved:
+    name: contributor-approved
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the author against the approved list on the target branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          list="$(gh api "repos/${REPO}/contents/.github/approved-contributors.txt?ref=${BASE_SHA}" \
+                    -H 'Accept: application/vnd.github.raw')"
+          if printf '%s\n' "$list" | sed 's/#.*//' | tr -d ' \t\r' | grep -qixF -- "$AUTHOR"; then
+            echo "${AUTHOR} is an approved contributor."
+          else
+            echo "::error::${AUTHOR} is not on the approved contributor list yet."
+            echo "Open a 'Contributor access request' issue; the owner or a contrib-approver will review it."
+            echo "This pull request can stay open, but it can't be merged until you're approved."
+            exit 1
+          fi
