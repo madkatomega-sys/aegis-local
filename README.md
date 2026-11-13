@@ -124,7 +124,10 @@ Contributions are welcome, from bug reports to new sandboxes. Good places to sta
 - **Agent definitions**: least-privilege OpenCode agents for scientific computing, auditing, and
   technical writing.
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Commits need a `Signed-off-by` line
+Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Anyone can fork and open pull requests; to have
+them merged, request contributor access through the issue template (see
+[GOVERNANCE.md](GOVERNANCE.md)). Each pull request comes from its own branch, must be up to date
+with `main`, and needs an approving review. Commits need a `Signed-off-by` line
 ([DCO](https://developercertificate.org/)); there is no CLA. Please follow the
 [Code of Conduct](CODE_OF_CONDUCT.md), and report security issues privately as described in
 [SECURITY.md](SECURITY.md).

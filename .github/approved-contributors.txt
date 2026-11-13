@@ -1,0 +1,11 @@
+# GitHub usernames allowed to submit pull requests that can be merged.
+#
+# The "contributor-approved" check reads this file from the target branch (never from the pull
+# request itself), so nobody can approve themselves by editing it in their own PR. To add a
+# contributor, open a pull request that adds their username here; the owner or a
+# contrib-approver must approve it. See GOVERNANCE.md.
+#
+# One username per line. Matching ignores case. Text after # is a comment.
+
+madkatomega-sys
+dependabot[bot]
