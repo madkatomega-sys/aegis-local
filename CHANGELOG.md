@@ -17,3 +17,5 @@ All notable changes to this project are recorded here. The format follows
 - Sandbox worker skeletons for code, math and physics, and writing.
 - OpenCode configuration, least-privilege agents, and status plugin.
 - Unit tests and CI.
+- Governance: roles, CODEOWNERS, approved contributor list with a `contributor-approved` gate,
+  contributor access request template, and branch and tag rulesets.

@@ -1,0 +1,31 @@
+name: Contributor access request
+description: Ask to be added to the approved contributor list so your pull requests can be merged.
+labels: [contributor-request]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Anyone can fork Aegis-Local and open a pull request. Before a pull request can be merged,
+        its author must be on the approved contributor list. The owner or a contrib-approver
+        reviews these requests.
+  - type: textarea
+    id: about
+    attributes:
+      label: What you'd like to work on
+      description: An area, an issue number, or a pull request you've already opened.
+    validations:
+      required: true
+  - type: textarea
+    id: background
+    attributes:
+      label: Relevant background
+      description: Links to past work, or a sentence about your experience with the area.
+  - type: checkboxes
+    id: agree
+    attributes:
+      label: Agreements
+      options:
+        - label: I've read CONTRIBUTING.md and will sign off my commits under the Developer Certificate of Origin.
+          required: true
+        - label: I agree to follow the Code of Conduct.
+          required: true
