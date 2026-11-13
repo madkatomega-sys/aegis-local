@@ -1,0 +1,44 @@
+# Aegis-Local hardware profile: nvidia-12gb
+# Size classes are the stable part of this file. Model names under "candidates" are suggestions
+# to verify (availability, license, results) before use. Set "model" to the path of your GGUF
+# file, or set AEGIS_TIER0_MODEL / AEGIS_TIER1_MODEL in .env.
+
+[profile]
+name = "nvidia-12gb"
+vendor = "nvidia"
+vram_gb = 12
+description = "GeForce RTX 3060 12 GB, 4070, 5070, and similar."
+placement = "Tier 1 on GPU, tier 0 in system RAM."
+tested = false
+
+[backend]
+windows = "cuda"
+linux = "cuda"
+
+[tiers.tier0]
+role = "extractor"
+size_class = "4B dense"
+quant = "Q8_0"
+candidates = ["Qwen3.5-4B"]
+model = ""
+ctx = 16384
+gpu_layers = 0
+port = 8080
+extra_args = ["--jinja"]
+
+[tiers.tier1]
+role = "reasoner"
+size_class = "9-14B dense"
+quant = "Q6_K"
+candidates = ["Qwen3.5-9B Q6_K", "Qwen2.5-Coder-14B Q4_K_M"]
+model = ""
+ctx = 32768
+gpu_layers = 99
+port = 8081
+extra_args = ["--jinja", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0"]
+
+[measured]
+# Filled in by whoever tests this profile. See docs/MODEL-LOADOUTS.md.
+tier0_tokens_per_second = 0
+tier1_tokens_per_second = 0
+peak_vram_gb = 0

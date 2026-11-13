@@ -1,0 +1,38 @@
+# Secrets and local settings
+.env
+*.local.yaml
+*.local.toml
+
+# Runtime state
+.aegis/
+*.sqlite
+*.db
+exports/
+
+# Model weights never belong in the repo
+models/
+*.gguf
+*.safetensors
+*.bin
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+
+# Node (OpenCode plugin development)
+node_modules/
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

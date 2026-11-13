@@ -1,0 +1,47 @@
+name: GPU profile report
+description: Share measured results for a hardware profile.
+labels: [profile]
+body:
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU, VRAM, and system RAM
+      placeholder: RTX 4070 12 GB, 32 GB DDR5
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Host OS
+      options: [Windows 11, Linux]
+    validations:
+      required: true
+  - type: input
+    id: backend
+    attributes:
+      label: llama.cpp build and backend
+      placeholder: b6xxx, CUDA 12.x
+    validations:
+      required: true
+  - type: textarea
+    id: models
+    attributes:
+      label: Models per tier
+      description: Exact model file names, quantization, context size, and GPU layers.
+    validations:
+      required: true
+  - type: textarea
+    id: numbers
+    attributes:
+      label: Measurements
+      description: Prompt and generation tokens per second for each tier, and peak VRAM.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I confirmed each model's license allows my use.
+          required: true
+        - label: The tool-call smoke test produced valid JSON on every run.

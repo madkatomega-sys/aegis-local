@@ -1,0 +1,44 @@
+# Aegis-Local hardware profile: intel-arc-12gb
+# Size classes are the stable part of this file. Model names under "candidates" are suggestions
+# to verify (availability, license, results) before use. Set "model" to the path of your GGUF
+# file, or set AEGIS_TIER0_MODEL / AEGIS_TIER1_MODEL in .env.
+
+[profile]
+name = "intel-arc-12gb"
+vendor = "intel"
+vram_gb = 12
+description = "Arc B580."
+placement = "Tier 1 on GPU, tier 0 in system RAM. Vulkan builds also work."
+tested = false
+
+[backend]
+windows = "sycl"
+linux = "sycl"
+
+[tiers.tier0]
+role = "extractor"
+size_class = "4B dense"
+quant = "Q6_K"
+candidates = ["Qwen3.5-4B"]
+model = ""
+ctx = 16384
+gpu_layers = 0
+port = 8080
+extra_args = ["--jinja"]
+
+[tiers.tier1]
+role = "reasoner"
+size_class = "9-14B dense"
+quant = "Q4_K_M"
+candidates = ["Qwen3.5-9B"]
+model = ""
+ctx = 32768
+gpu_layers = 99
+port = 8081
+extra_args = ["--jinja", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0"]
+
+[measured]
+# Filled in by whoever tests this profile. See docs/MODEL-LOADOUTS.md.
+tier0_tokens_per_second = 0
+tier1_tokens_per_second = 0
+peak_vram_gb = 0

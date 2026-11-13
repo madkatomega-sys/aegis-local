@@ -1,0 +1,139 @@
+# Aegis-Local container stack. Identical on Windows 11 (Docker Desktop / Podman Desktop on WSL2)
+# and Linux (Docker Engine / Podman). Inference runs natively on the host; see aegis.py.
+#
+# Networks:
+#   control         router and guard; can reach the host's llama-server and, for the guard, GitHub
+#   sandbox-*       one internal network per worker; no route out, only the guard can reach them
+#
+# Every published port binds to 127.0.0.1.
+
+name: aegis-local
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  restart: unless-stopped
+
+x-healthcheck: &healthcheck
+  test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+  interval: 15s
+  timeout: 5s
+  retries: 5
+
+services:
+  model-router:
+    <<: *hardening
+    build: ./services/model-router
+    image: aegis-local/model-router:dev
+    environment:
+      AEGIS_ROUTER_CONFIG: /config/router.yaml
+      AEGIS_TIER0_URL: ${AEGIS_TIER0_URL:-http://host.docker.internal:8080/v1}
+      AEGIS_TIER1_URL: ${AEGIS_TIER1_URL:-http://host.docker.internal:8081/v1}
+    volumes:
+      - ./config/router.yaml:/config/router.yaml:ro
+    tmpfs:
+      - /tmp:size=64m
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:4000:8000"
+    networks: [control]
+    mem_limit: 512m
+    pids_limit: 128
+    healthcheck: *healthcheck
+
+  mcp-guard-proxy:
+    <<: *hardening
+    build: ./services/mcp-guard-proxy
+    image: aegis-local/mcp-guard-proxy:dev
+    environment:
+      AEGIS_POLICY: /config/policy.yaml
+      AEGIS_SERVERS: /config/mcp-servers.yaml
+      AEGIS_ROUTER_URL: http://model-router:8000/v1
+      AEGIS_LEDGER: /data/ledger.sqlite
+      # The guard refuses to start without both tokens. aegis.py generates them.
+      AEGIS_CLIENT_TOKEN: ${AEGIS_CLIENT_TOKEN:-}
+      AEGIS_ADMIN_TOKEN: ${AEGIS_ADMIN_TOKEN:-}
+      AEGIS_GITHUB_ENABLED: ${AEGIS_GITHUB_ENABLED:-false}
+      GITHUB_PAT: ${GITHUB_PAT:-}
+    volumes:
+      - ./config/policy.yaml:/config/policy.yaml:ro
+      - ./config/mcp-servers.yaml:/config/mcp-servers.yaml:ro
+      - guard-data:/data
+    tmpfs:
+      - /tmp:size=64m
+    ports:
+      - "127.0.0.1:4100:8000"
+    networks: [control, sandbox-code, sandbox-math, sandbox-writing]
+    depends_on: [model-router, code-worker, math-physics-mcp, writing-auditor]
+    mem_limit: 512m
+    pids_limit: 128
+    healthcheck: *healthcheck
+
+  code-worker:
+    <<: *hardening
+    build: ./services/sandboxes/code-worker
+    image: aegis-local/code-worker:dev
+    environment:
+      AEGIS_WORKSPACE: /workspace/repo
+      AEGIS_CHECK_TIMEOUT: "300"
+      HOME: /tmp
+    volumes:
+      - aegis-workspace:/workspace
+    tmpfs:
+      - /tmp:size=512m,exec
+    networks: [sandbox-code]
+    mem_limit: 2g
+    cpus: 2
+    pids_limit: 256
+    healthcheck: *healthcheck
+
+  math-physics-mcp:
+    <<: *hardening
+    build: ./services/sandboxes/math-physics-mcp
+    image: aegis-local/math-physics-mcp:dev
+    environment:
+      AEGIS_EVAL_TIMEOUT: "30"
+      HOME: /tmp
+      MPLCONFIGDIR: /tmp/mpl
+    tmpfs:
+      - /tmp:size=256m
+    networks: [sandbox-math]
+    mem_limit: 1g
+    cpus: 1
+    pids_limit: 64
+    healthcheck: *healthcheck
+
+  writing-auditor:
+    <<: *hardening
+    build: ./services/sandboxes/writing-auditor
+    image: aegis-local/writing-auditor:dev
+    environment:
+      AEGIS_VAULT: /vault
+      AEGIS_INDEX: /data/index.sqlite
+      HOME: /tmp
+    volumes:
+      - ${AEGIS_VAULT_PATH:-./vault-example}:/vault:ro
+      - writing-index:/data
+    tmpfs:
+      - /tmp:size=128m
+    networks: [sandbox-writing]
+    mem_limit: 1g
+    cpus: 1
+    pids_limit: 64
+    healthcheck: *healthcheck
+
+networks:
+  control: {}
+  sandbox-code:
+    internal: true
+  sandbox-math:
+    internal: true
+  sandbox-writing:
+    internal: true
+
+volumes:
+  aegis-workspace: {}
+  guard-data: {}
+  writing-index: {}

@@ -1,0 +1,36 @@
+[project]
+name = "aegis-local"
+version = "0.0.1"
+description = "A deterministic harness for local AI: constrained inference, an out-of-process tool firewall, loop breakers, and sandboxed verifiers."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [
+  ".",
+  "services/model-router",
+  "services/mcp-guard-proxy",
+  "services/sandboxes/writing-auditor",
+]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = [".opencode"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM"]
+ignore = [
+  "S101",   # assert is fine in tests
+  "S104",   # services bind 0.0.0.0 inside containers; Compose publishes to 127.0.0.1 only
+  "S603",   # subprocess calls use fixed argument lists, never a shell
+  "S607",   # tools are resolved from PATH by design (git, docker, podman, taskkill)
+  "S310",   # urllib is used only for loopback URLs the launcher builds itself
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["aegis_router", "aegis_guard", "vault", "aegis"]

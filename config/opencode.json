@@ -1,0 +1,91 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "aegis": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Aegis-Local",
+      "options": {
+        "baseURL": "http://127.0.0.1:4000/v1"
+      },
+      "models": {
+        "aegis-reasoner": { "name": "Aegis reasoner (tier 1)" },
+        "aegis-fast": { "name": "Aegis fast (tier 0)" }
+      }
+    }
+  },
+  "model": "aegis/aegis-reasoner",
+  "small_model": "aegis/aegis-fast",
+  "mcp": {
+    "aegis": {
+      "type": "remote",
+      "url": "http://127.0.0.1:4100/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:AEGIS_CLIENT_TOKEN}"
+      }
+    }
+  },
+  "tools": {
+    "write": false,
+    "edit": false,
+    "patch": false,
+    "bash": false,
+    "webfetch": false
+  },
+  "permission": {
+    "edit": "deny",
+    "bash": "deny",
+    "webfetch": "deny"
+  },
+  "agent": {
+    "planner": {
+      "description": "Read-only architect. Investigates, plans, and delegates verification. Never writes.",
+      "mode": "primary",
+      "model": "aegis/aegis-reasoner",
+      "prompt": "{file:./agents/planner.md}",
+      "tools": {
+        "aegis_code__apply_patch": false,
+        "aegis_code__reset_workspace": false,
+        "aegis_github__create_*": false,
+        "aegis_github__update_*": false,
+        "aegis_github__merge_*": false
+      }
+    },
+    "builder": {
+      "description": "Implements changes inside the sandboxed workspace and proves them with checks.",
+      "mode": "primary",
+      "model": "aegis/aegis-reasoner",
+      "prompt": "{file:./agents/builder.md}",
+      "tools": {
+        "aegis_writing__*": false
+      }
+    },
+    "verifier": {
+      "description": "Adversarial checker. Can only run tests, type checks, and symbolic math.",
+      "mode": "subagent",
+      "model": "aegis/aegis-reasoner",
+      "prompt": "{file:./agents/verifier.md}",
+      "tools": {
+        "aegis_*": false,
+        "aegis_code__run_check": true,
+        "aegis_code__read_file": true,
+        "aegis_code__list_files": true,
+        "aegis_code__diff": true,
+        "aegis_math__*": true
+      }
+    },
+    "essayist": {
+      "description": "Long-form writer that cites only indexed vault sources.",
+      "mode": "primary",
+      "model": "aegis/aegis-reasoner",
+      "prompt": "{file:./agents/essayist.md}",
+      "tools": {
+        "aegis_*": false,
+        "aegis_writing__search": true,
+        "aegis_writing__get_chunk": true,
+        "aegis_writing__verify_quote": true,
+        "aegis_writing__audit_draft": true
+      }
+    }
+  }
+}

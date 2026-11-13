@@ -1,0 +1,41 @@
+# Upstream MCP servers behind the guard proxy.
+#
+# The IDE connects only to the guard. The guard connects to these, prefixes their tools with the
+# server name ("math__solve"), and applies policy.yaml to every call.
+#
+# trust:
+#   trusted   : output is returned as-is and doesn't taint the session
+#   untrusted : output taints the session and, if quarantine is on, passes through the extractor
+#
+# All sandbox URLs are on internal container networks with no route to the internet.
+
+version: 1
+
+servers:
+  math:
+    url: http://math-physics-mcp:8000/mcp
+    trust: trusted
+    enabled: true
+
+  code:
+    url: http://code-worker:8000/mcp
+    # Set to "untrusted" when the workspace holds a repository you didn't write. Its files and
+    # test output can contain text aimed at the model.
+    trust: trusted
+    enabled: true
+
+  writing:
+    url: http://writing-auditor:8000/mcp
+    trust: trusted
+    enabled: true
+
+  github:
+    # GitHub's hosted MCP endpoint, authenticated with a fine-grained personal access token.
+    # Issue and PR text is written by other people, so it's always untrusted.
+    url: https://api.githubcopilot.com/mcp/
+    trust: untrusted
+    enabled: false                    # set AEGIS_GITHUB_ENABLED=true in .env to turn on
+    enabled_env: AEGIS_GITHUB_ENABLED
+    headers:
+      Authorization: "Bearer ${GITHUB_PAT}"
+      X-MCP-Toolsets: "repos,issues,pull_requests"

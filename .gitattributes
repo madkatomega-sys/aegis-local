@@ -1,0 +1,17 @@
+# Force LF everywhere so Windows checkouts don't break container entrypoints.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files.
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.gguf binary
+*.safetensors binary
+*.sqlite binary
+*.db binary

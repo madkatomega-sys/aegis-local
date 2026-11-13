@@ -1,0 +1,3 @@
+"""Aegis-Local model router."""
+
+__version__ = "0.0.1"

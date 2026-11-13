@@ -1,0 +1,44 @@
+# Aegis-Local hardware profile: nvidia-24gb-plus
+# Size classes are the stable part of this file. Model names under "candidates" are suggestions
+# to verify (availability, license, results) before use. Set "model" to the path of your GGUF
+# file, or set AEGIS_TIER0_MODEL / AEGIS_TIER1_MODEL in .env.
+
+[profile]
+name = "nvidia-24gb-plus"
+vendor = "nvidia"
+vram_gb = 24
+description = "GeForce RTX 3090, 4090, 5090."
+placement = "Both tiers resident on GPU."
+tested = false
+
+[backend]
+windows = "cuda"
+linux = "cuda"
+
+[tiers.tier0]
+role = "extractor"
+size_class = "9B dense"
+quant = "Q6_K"
+candidates = ["Qwen3.5-9B"]
+model = ""
+ctx = 16384
+gpu_layers = 99
+port = 8080
+extra_args = ["--jinja"]
+
+[tiers.tier1]
+role = "reasoner"
+size_class = "27-32B dense"
+quant = "Q4_K_M"
+candidates = ["Qwen3.5-27B", "Gemma 4 31B"]
+model = ""
+ctx = 32768
+gpu_layers = 99
+port = 8081
+extra_args = ["--jinja", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0"]
+
+[measured]
+# Filled in by whoever tests this profile. See docs/MODEL-LOADOUTS.md.
+tier0_tokens_per_second = 0
+tier1_tokens_per_second = 0
+peak_vram_gb = 0

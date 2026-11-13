@@ -1,0 +1,85 @@
+# Guard proxy policy.
+#
+# Every decision here is made by deterministic code in services/mcp-guard-proxy. No model is
+# consulted. When a rule can't be evaluated, the guard fails closed (deny or hold).
+
+version: 1
+
+budgets:
+  max_tool_calls_per_session: 80     # attempted calls, including held and blocked ones
+  max_consecutive_failures: 5        # tool results with isError, in a row
+
+breaker:
+  window: 12                         # how many recent calls the loop checks look at
+  max_identical_calls: 3             # same tool + same canonical args within the window
+  max_identical_failures: 1          # an identical call that already failed this many times is blocked
+  oscillation_periods: [2, 3]        # detect A,B,A,B and A,B,C,A,B,C
+  oscillation_repeats: 2             # how many full repeats of the pattern trip the breaker
+  near_miss:
+    similarity: 0.92                 # difflib ratio between consecutive canonical argument strings
+    failing_streak: 3                # this many similar failing calls to the same tool trip the breaker
+
+taint:
+  # Output from servers with trust "untrusted" (see mcp-servers.yaml) marks the session tainted.
+  # Taint is a high-water mark: it never clears within a session.
+  quarantine: true                   # pass untrusted output through the extractor before returning it
+  extractor_alias: aegis-extractor
+  max_verbatim_chars: 400            # per snippet kept from untrusted content
+  max_input_chars: 40000             # untrusted content longer than this is truncated before extraction
+  on_extractor_failure: deny         # deny | raw_with_warning
+
+approvals:
+  # always       : hold every call until the user approves it
+  # when_tainted : hold only after the session has read untrusted content
+  # never        : don't hold (use for read-only tools)
+  default_for_mutating: when_tainted
+
+# Tool rules. The first matching pattern wins. Tools that match no rule are denied and hidden.
+# Names are "<server>__<tool>" as the guard exposes them.
+tools:
+  # Math and physics: pure computation, no side effects.
+  - match: "math__*"
+    mutating: false
+
+  # Code worker.
+  - match: "code__apply_patch"
+    mutating: true
+  - match: "code__reset_workspace"
+    mutating: true
+    approval: always
+  - match: "code__run_check"
+    mutating: true                    # runs code from the workspace
+  - match: "code__*"
+    mutating: false
+
+  # Writing auditor.
+  - match: "writing__index_vault"
+    mutating: true
+    approval: never
+  - match: "writing__*"
+    mutating: false
+
+  # GitHub: reads are allowed and tainted; writes always need approval; destructive calls are denied.
+  - match: "github__delete_*"
+    deny: true
+  - match: "github__merge_*"
+    mutating: true
+    approval: always
+  - match: "github__create_*"
+    mutating: true
+    approval: always
+  - match: "github__update_*"
+    mutating: true
+    approval: always
+  - match: "github__add_*"
+    mutating: true
+    approval: always
+  - match: "github__push_*"
+    mutating: true
+    approval: always
+  - match: "github__get_*"
+    mutating: false
+  - match: "github__list_*"
+    mutating: false
+  - match: "github__search_*"
+    mutating: false

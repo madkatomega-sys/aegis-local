@@ -1,0 +1,8 @@
+Aegis-Local
+Copyright 2026 the Aegis-Local contributors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This repository does not include or redistribute model weights, llama.cpp binaries, or
+third-party container images. Those components are obtained by the user at install time and
+remain under their own licenses.

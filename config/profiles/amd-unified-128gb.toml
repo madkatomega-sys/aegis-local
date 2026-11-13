@@ -1,0 +1,44 @@
+# Aegis-Local hardware profile: amd-unified-128gb
+# Size classes are the stable part of this file. Model names under "candidates" are suggestions
+# to verify (availability, license, results) before use. Set "model" to the path of your GGUF
+# file, or set AEGIS_TIER0_MODEL / AEGIS_TIER1_MODEL in .env.
+
+[profile]
+name = "amd-unified-128gb"
+vendor = "amd"
+vram_gb = 96
+description = "Ryzen AI Max+ 395 and other unified-memory APUs with 96-128 GB."
+placement = "Both tiers resident. Raise the GPU memory allocation in BIOS or with amdgpu.gttsize first."
+tested = false
+
+[backend]
+windows = "vulkan"
+linux = "vulkan"
+
+[tiers.tier0]
+role = "extractor"
+size_class = "9B dense"
+quant = "Q8_0"
+candidates = ["Qwen3.5-9B"]
+model = ""
+ctx = 16384
+gpu_layers = 99
+port = 8080
+extra_args = ["--jinja"]
+
+[tiers.tier1]
+role = "reasoner"
+size_class = "30B+ MoE"
+quant = "Q6_K"
+candidates = ["Qwen3.5-35B-A3B Q6_K", "Qwen3.5-122B-A10B Q4_K_M"]
+model = ""
+ctx = 65536
+gpu_layers = 99
+port = 8081
+extra_args = ["--jinja", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0"]
+
+[measured]
+# Filled in by whoever tests this profile. See docs/MODEL-LOADOUTS.md.
+tier0_tokens_per_second = 0
+tier1_tokens_per_second = 0
+peak_vram_gb = 0
