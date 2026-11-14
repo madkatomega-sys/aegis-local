@@ -12,7 +12,7 @@ described [below](#what-validation-found-and-the-fixes).
 
 | | |
 |---|---|
-| Code under test | commit `136a449` on the release branch (E1 to E6) |
+| Code under test | commit `136a449` on the local validation branch (E1 to E6); same code as release `v0.1.0` (see below) |
 | Date | 2026-11-13 |
 | Machine | Windows 11 Pro build 26300, Intel Core i9-9900K (8 cores), 31.9 GB RAM |
 | GPU | NVIDIA GeForce RTX 4070, 12 GB, driver 610.88 |
@@ -22,6 +22,16 @@ described [below](#what-validation-found-and-the-fixes).
 | Profile | `nvidia-12gb`: tier 0 on the CPU (port 8080), tier 1 on the GPU (port 8081) |
 
 Full details: [E0-environment.txt](E0-environment.txt).
+
+The commit hashes in these transcripts (`136a449`, and `7cbc90d` and `1d85577` for the earlier
+runs) are from the local validation branch. That branch was squash-merged into `main` as
+`253ace0`, which is tagged `v0.1.0`, so those hashes don't exist in this repository. The
+release's code is the code validated here, with two differences:
+
+- Dependabot raised FastAPI's minimum version from `>=0.162.3` to `>=0.162.4` in
+  `services/mcp-guard-proxy/requirements.txt` and `services/model-router/requirements.txt`.
+  The validated images ran FastAPI 0.162.7, which meets the new minimum.
+- `docs/PLATFORMS.md` gained the "Verified configurations" section that links to this report.
 
 ## What was run
 

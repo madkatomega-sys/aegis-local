@@ -47,9 +47,32 @@ def changelog_section(version: str) -> str:
     return match.group(1).strip()
 
 
+# The link definitions at the foot of CHANGELOG.md, e.g. "[0.1.0]: https://...". They belong to
+# the version headings, which the notes leave out, so they would show as stray text.
+LINK_DEFINITION = re.compile(r"^\[[^\]]+\]:[ \t]+\S+[^\n]*\n?", re.M)
+# An inline link or image target, e.g. "](docs/x.md)" or "](docs/x.md#part)".
+LINK_TARGET = re.compile(r"\]\(([^)\s]+)\)")
+
+
+def for_release_page(section: str, version: str) -> str:
+    """Make the changelog section read correctly on the GitHub release page.
+
+    Relative links in CHANGELOG.md resolve against the repository, but on the release page they
+    resolve against /releases/tag/, so they point them at the tagged files instead.
+    """
+
+    def absolute(match: re.Match[str]) -> str:
+        target = match.group(1)
+        if re.match(r"[a-z][a-z0-9+.-]*:", target, re.I) or target.startswith(("#", "/")):
+            return match.group(0)
+        return f"](https://github.com/{REPO}/blob/v{version}/{target.removeprefix('./')})"
+
+    return LINK_TARGET.sub(absolute, LINK_DEFINITION.sub("", section)).strip()
+
+
 def notes(version: str) -> str:
     images = "\n".join(f"ghcr.io/{REPO}/{name}:{version}" for name in SERVICES)
-    return f"""{changelog_section(version)}
+    return f"""{for_release_page(changelog_section(version), version)}
 
 ## Container images
 
