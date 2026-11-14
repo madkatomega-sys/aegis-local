@@ -1,8 +1,9 @@
-# E4c Vulkan: bounded extraction schema (this release), Stage 1 acceptance test
-# llama-server (Vulkan build b12361) -m Qwen3-4B-Q4_K_M.gguf -c 8192 -ngl 99 --jinja --cache-type-k q8_0 --cache-type-v q8_0 -fa on
-# 100 requests, temperature 0.8, max_tokens 2048 (tier0's router cap), response_format json_schema (strict) from config/router.yaml
+# E4c Vulkan: tier0 configuration as shipped in 0.1.0 (bounded schema, thinking off)
+# llama-server -m Qwen3-4B-Q4_K_M.gguf -c 8192 -ngl 99 --jinja --cache-type-k q8_0 --cache-type-v q8_0 -fa on --reasoning-budget 0
+# 100 requests, temperature 0.8, max_tokens 6144 (tier0 cap), chat_template_kwargs.enable_thinking=false,
+# response_format json_schema (strict) = the extraction schema from config/router.yaml at 136a449
 
-vulkan: valid 100/100, 128.6 tok/s generation, 560s total, GPU memory used 4268 MiB
-  sample: {   "summary": "Meeting rescheduling",   "facts": [     "Event: Meeting",     "New time: Tuesday 3:00 PM",     "Location: Room 4B",     "Task: Prepare Q3 numbers"   ],   "requested_actions": [     "Bring Q3 numbers to the meeting"   ],   "verbatim_snippets": [     "The meeting moved to Tuesday 3pm i
+vulkan: valid 100/100, 114.8 tok/s generation, 129s total, GPU memory used 4287 MiB
+  sample: {   "summary": "Meeting rescheduling",   "facts": [     "The meeting was originally scheduled for a different time or location",     "The new date is Tuesday at 3pm",     "The new location is room 4B",     "Participants are expected to bring Q3 numbers"   ],   "requested_actions": [     "Reschedule 
 
-Generated tokens per request: mean 710, max 1678 (cap 2048), over 100 requests
+Generated tokens per request: mean 142, max 211 (cap 6144), over 100 requests

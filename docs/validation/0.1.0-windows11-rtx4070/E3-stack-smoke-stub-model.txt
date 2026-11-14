@@ -1,12 +1,10 @@
-# E3 full stack with a stub model (same overlays CI uses), 789a83a
+# E3 full stack with a stub model (the overlays CI uses) at 136a449
 $ docker compose -f docker-compose.yml -f tests/smoke/compose.stub-llm.yml -f tests/smoke/compose.fixtures.yml up -d --no-build --wait
- Container aegis-local-code-worker-1 Waiting 
- Container aegis-local-stub-llm-1 Waiting 
  Container aegis-local-stub-llm-1 Healthy 
  Container aegis-local-fixture-github-1 Healthy 
+ Container aegis-local-math-physics-mcp-1 Healthy 
  Container aegis-local-code-worker-1 Healthy 
  Container aegis-local-writing-auditor-1 Healthy 
- Container aegis-local-math-physics-mcp-1 Healthy 
  Container aegis-local-model-router-1 Healthy 
  Container aegis-local-mcp-guard-proxy-1 Healthy 
 
@@ -36,7 +34,9 @@ code worker
   [ ok ] answers (empty workspace)
 prompt injection
   [ ok ] untrusted output is quarantined
-  [ ok ] raw injected text is not passed on
+  [ ok ] raw issue text is not passed on
+  [ ok ] caller gets only the structured extraction
+  [ ok ] injected instruction is not passed on
   [ ok ] session is tainted
   [ ok ] mutating call is held
   [ ok ] approval is pending with its taint source

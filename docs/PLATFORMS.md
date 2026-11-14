@@ -46,6 +46,20 @@ python aegis.py up --profile nvidia-12gb
 `doctor` checks Python, the container runtime, the `llama-server` binary, the selected profile,
 and that model files exist. It changes nothing.
 
+## Verified configurations
+
+Configurations where the whole release was run on real hardware, with the evidence. A profile
+is marked `tested = true` only once its recommended models have been run; until then, these
+results show that the harness works on the hardware, not how fast the recommended loadout is.
+
+| Release | OS and runtime | Hardware | Profile and backend | Models | Result |
+|---|---|---|---|---|---|
+| 0.1.0 | Windows 11 Pro 26300, Docker Desktop 29.9.3 | i9-9900K, 32 GB RAM, RTX 4070 12 GB | `nvidia-12gb`, llama.cpp b12361 CUDA 13.5 and Vulkan | Qwen3-4B Q4_K_M on both tiers | All checks pass; tier 1 at 120 tok/s (CUDA) and 133 tok/s (Vulkan), tier 0 on the CPU at 12 tok/s, 6.6 GB GPU memory. [Evidence](validation/0.1.0-windows11-rtx4070/README.md) |
+
+Every pull request also runs the full stack with a stub model on Linux (Ubuntu, Docker) in CI.
+To add a row, run `docs/validation/walkthrough.py` on your machine and open a pull request with
+its transcript under `docs/validation/`.
+
 ## Windows notes
 
 - Clone with LF line endings. The repository's `.gitattributes` handles this, but if you cloned
