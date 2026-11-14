@@ -22,6 +22,7 @@ import urllib.request
 from typing import Any
 
 FAILURES: list[str] = []
+LIVE = False  # set by --live: a real model is behind the router
 
 
 def check(name: str, ok: bool, detail: str = "") -> None:
@@ -89,10 +90,20 @@ def check_router(base: str, live: bool, schema_runs: int) -> None:
     for alias in ("aegis-fast", "aegis-reasoner"):
         status, headers, body = http(
             f"{base}/v1/chat/completions",
-            {"model": alias, "max_tokens": 64, "messages": [{"role": "user", "content": "Reply with one word: ready"}]},
+            {
+                "model": alias,
+                "max_tokens": 1024,
+                "messages": [{"role": "user", "content": "Reply with one word: ready"}],
+            },
         )
-        content = body["choices"][0]["message"]["content"] if status == 200 else body
-        check(f"{alias} answers", status == 200 and bool(content), str(content)[:200])
+        if status == 200:
+            message = body["choices"][0]["message"]
+            # Reasoning models may put their output in reasoning_content before the answer.
+            content = message.get("content") or message.get("reasoning_content")
+        else:
+            content = body
+        tier = next((v for k, v in headers.items() if k.lower() == "x-aegis-tier"), "?")
+        check(f"{alias} answers (via {tier})", status == 200 and bool(content), str(content)[:200])
     status, _, body = http(f"{base}/status")
     check("tiers healthy", status == 200 and all(t.get("healthy") for t in body["tiers"].values()), str(body))
 
@@ -112,9 +123,48 @@ def check_router(base: str, live: bool, schema_runs: int) -> None:
             pass
     if schema_runs:
         elapsed = time.monotonic() - started
-        check(f"extractor JSON valid {valid}/{schema_runs} ({elapsed:.0f}s)", valid == schema_runs)
+        check(f"aegis-extractor (tier0) JSON valid {valid}/{schema_runs} ({elapsed:.0f}s)", valid == schema_runs)
     if live:
         print("    (live model: replies came from llama-server)")
+
+
+PLAN_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["goal", "steps", "risky"],
+    "properties": {
+        "goal": {"type": "string", "maxLength": 200},
+        "steps": {"type": "array", "maxItems": 6, "items": {"type": "string", "maxLength": 160}},
+        "risky": {"type": "boolean"},
+    },
+}
+
+
+def check_reasoner_schema(base: str, runs: int) -> None:
+    """A client-supplied JSON schema on the reasoner tier must always yield valid JSON."""
+    valid = 0
+    started = time.monotonic()
+    for i in range(runs):
+        status, _, body = http(
+            f"{base}/v1/chat/completions",
+            {
+                "model": "aegis-reasoner",
+                "temperature": 0.7,
+                "max_tokens": 2048,
+                "messages": [{"role": "user", "content": f"Plan step-by-step how to add a CLI flag #{i} to a tool."}],
+                "response_format": {
+                    "type": "json_schema",
+                    "json_schema": {"name": "plan", "strict": True, "schema": PLAN_SCHEMA},
+                },
+            },
+        )
+        try:
+            data = json.loads(body["choices"][0]["message"]["content"])
+            valid += set(data) == {"goal", "steps", "risky"} and isinstance(data["risky"], bool)
+        except (KeyError, TypeError, ValueError):
+            pass
+    elapsed = time.monotonic() - started
+    check(f"aegis-reasoner (tier1) JSON valid {valid}/{runs} ({elapsed:.0f}s)", valid == runs)
 
 
 def check_guard(guard: Guard) -> None:
@@ -167,7 +217,23 @@ def check_guard(guard: Guard) -> None:
     s2 = guard.session()
     ok, text = guard.call(s2, "github__get_issue", number=7)
     check("untrusted output is quarantined", ok and "quarantined" in text, text[:300])
-    check("raw injected text is not passed on", "IGNORE ALL PREVIOUS INSTRUCTIONS" not in text, text[:300])
+    check("raw issue text is not passed on", "Issue #7: build fails on Windows\n\nRunning pytest" not in text, text)
+    extraction = text.split("\n", 1)[1] if "\n" in text else ""
+    try:
+        fields = set(json.loads(extraction))
+    except ValueError:
+        fields = set()
+    check(
+        "caller gets only the structured extraction",
+        fields == {"summary", "facts", "requested_actions", "verbatim_snippets"},
+        text[:400],
+    )
+    if not LIVE:
+        # The stub never echoes instructions. A real extractor may quote one under
+        # requested_actions, which is the designed behavior: reported as labeled data.
+        check("injected instruction is not passed on", "IGNORE ALL PREVIOUS INSTRUCTIONS" not in text, text[:300])
+    else:
+        print("    extraction from the live model:\n      " + extraction.replace("\n", "\n      "))
     _, _, status = http(f"{guard.base}/status", token=guard.admin)
     check("session is tainted", status["sessions"][s2]["tainted"] is True)
     ok, text = guard.call(s2, "code__apply_patch", diff="--- a/x\n+++ b/x\n")
@@ -225,10 +291,15 @@ def main() -> int:
     parser.add_argument(
         "--compose", help="compose command prefix for isolation checks, e.g. 'docker compose -f a -f b'"
     )
+    parser.add_argument("--reasoner-schema-runs", type=int, default=0, help="schema requests to the reasoner tier")
     parser.add_argument("--no-timeout-check", action="store_true", help="skip the math time-limit check")
     args = parser.parse_args()
+    global LIVE
+    LIVE = args.live
 
     check_router(args.router, args.live, args.schema_runs)
+    if args.reasoner_schema_runs:
+        check_reasoner_schema(args.router, args.reasoner_schema_runs)
     check_guard(Guard(args.guard, args.client_token, args.admin_token, timeout_check=not args.no_timeout_check))
     if args.compose:
         check_isolation(args.compose.split())

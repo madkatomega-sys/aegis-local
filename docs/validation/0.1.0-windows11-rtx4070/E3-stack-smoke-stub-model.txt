@@ -1,0 +1,53 @@
+# E3 full stack with a stub model (same overlays CI uses), 789a83a
+$ docker compose -f docker-compose.yml -f tests/smoke/compose.stub-llm.yml -f tests/smoke/compose.fixtures.yml up -d --no-build --wait
+ Container aegis-local-code-worker-1 Waiting 
+ Container aegis-local-stub-llm-1 Waiting 
+ Container aegis-local-stub-llm-1 Healthy 
+ Container aegis-local-fixture-github-1 Healthy 
+ Container aegis-local-code-worker-1 Healthy 
+ Container aegis-local-writing-auditor-1 Healthy 
+ Container aegis-local-math-physics-mcp-1 Healthy 
+ Container aegis-local-model-router-1 Healthy 
+ Container aegis-local-mcp-guard-proxy-1 Healthy 
+
+$ python tests/smoke/smoke.py --compose "<compose command>"
+router
+  [ ok ] lists aliases
+  [ ok ] aegis-fast answers (via tier0)
+  [ ok ] aegis-reasoner answers (via tier1)
+  [ ok ] tiers healthy
+  [ ok ] aegis-extractor (tier0) JSON valid 3/3 (0s)
+guard
+  [ ok ] rejects calls without a token
+  [ ok ] admin API rejects the client token
+  [ ok ] lists prefixed tools from every worker
+  [ ok ] hides denied tools
+math worker
+  [ ok ] solves exactly
+  [ ok ] converts units
+  [ ok ] stops a runaway computation (3.0s)
+  [ ok ] simplifies exactly
+writing auditor
+  [ ok ] indexes the vault
+  [ ok ] finds a passage
+  [ ok ] verifies a real quote
+  [ ok ] rejects an invented quote
+code worker
+  [ ok ] answers (empty workspace)
+prompt injection
+  [ ok ] untrusted output is quarantined
+  [ ok ] raw injected text is not passed on
+  [ ok ] session is tainted
+  [ ok ] mutating call is held
+  [ ok ] approval is pending with its taint source
+  [ ok ] approved call passes the hold once
+  [ ok ] approval is single-use
+circuit breaker
+  [ ok ] trips on a repeated failing call
+sandbox isolation
+  [ ok ] code-worker can't reach internet, router, peers, or its root fs
+  [ ok ] math-physics-mcp can't reach internet, router, peers, or its root fs
+  [ ok ] writing-auditor can't reach internet, router, peers, or its root fs
+
+all smoke checks passed
+smoke exit 0

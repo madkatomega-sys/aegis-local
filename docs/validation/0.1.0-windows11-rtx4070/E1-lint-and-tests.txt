@@ -1,0 +1,41 @@
+﻿# E1 lint and unit tests (Windows host, Python 3.12.10)
+
+$ .venv\Scripts\ruff check .
+All checks passed!
+
+$ .venv\Scripts\ruff format --check .
+52 files already formatted
+
+$ python -m pytest -v -p no:warnings
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.2.0, pluggy-1.7.0
+rootdir: C:\Users\madkat\Documents\flagship\aegis-local
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.16.0, platformdirs-4.14.5
+collected 95 items
+
+tests\test_breaker.py .............                                      [ 13%]
+tests\test_guard_app.py .........                                        [ 23%]
+tests\test_launcher.py ...................                               [ 43%]
+tests\test_mathcore.py .............                                     [ 56%]
+tests\test_policy.py ............                                        [ 69%]
+tests\test_release.py .....                                              [ 74%]
+tests\test_router_app.py ........                                        [ 83%]
+tests\test_routing.py ...........                                        [ 94%]
+tests\test_vault.py .....                                                [100%]
+
+============================= 95 passed in 6.74s ==============================
+
+$ python aegis.py profiles
+profile              vendor    vram  backend (windows)  tested
+amd-16gb             amd         16  hip                no
+amd-24gb             amd         24  hip                no
+amd-unified-128gb    amd         96  vulkan             no
+cpu-only             cpu          0  cpu                no
+intel-arc-12gb       intel       12  sycl               no
+intel-arc-16gb       intel       16  sycl               no
+nvidia-12gb          nvidia      12  cuda               no
+nvidia-16gb          nvidia      16  cuda               no
+nvidia-24gb-plus     nvidia      24  cuda               no
+nvidia-8gb           nvidia       8  cuda               no
