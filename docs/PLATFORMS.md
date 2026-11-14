@@ -11,7 +11,7 @@ is identical.
 | Python | 3.11 or newer (python.org installer or `winget install Python.Python.3.12`) | 3.11 or newer (distribution package) |
 | Containers | Docker Desktop (WSL2 backend) or Podman Desktop | Docker Engine or Podman (rootless works) |
 | Inference | `llama-server` from a llama.cpp release build for your GPU | `llama-server` from a release build, your package manager, or a source build |
-| Frontend | OpenCode (`npm install -g opencode-ai`) | Same |
+| Frontend | OpenCode 1.19.5 or 2.3.0 (`npm install -g opencode-ai` installs 1.19.5; 2.3.0 is on `winget`) | Same |
 | Git | Git for Windows | Distribution package |
 
 ## Install llama.cpp
@@ -59,6 +59,14 @@ results show that the harness works on the hardware, not how fast the recommende
 Every pull request also runs the full stack with a stub model on Linux (Ubuntu, Docker) in CI.
 To add a row, run `docs/validation/walkthrough.py` on your machine and open a pull request with
 its transcript under `docs/validation/`.
+
+### OpenCode versions
+
+`config/opencode.json` turns off every OpenCode tool that reaches the host, the web, or other
+agents, so that all actions go through the guard. That was checked on OpenCode 1.19.5 and 2.3.0
+by capturing the tools each agent is offered
+([evidence](validation/opencode-2026-11-14-windows11-rtx4070/README.md)). Other versions may add
+tools the config doesn't know about; check them the same way before relying on them.
 
 ## Windows notes
 

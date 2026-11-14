@@ -1,0 +1,46 @@
+`opencode models` output, and the agents OpenCode loads from config/opencode.json.
+
+=== Models BEFORE hardening, 2.3.0
+aegis/aegis-fast
+aegis/aegis-reasoner
+opencode/beam-free
+opencode/big-pickle
+opencode/deepseek-v4.1-flash-free
+opencode/flint-40b-free
+opencode/glm-5.3-flash-free
+opencode/iceman-free
+opencode/inkling-2-small-free
+opencode/longcat-2.5-free
+opencode/mimo-v2.6-flash-free
+opencode/minimax-m3.1-flash-free
+opencode/nemotron-3.5-lightning-free
+opencode/nemotron-3.5-super-vl-free
+exit 0
+
+=== Models AFTER hardening, 1.19.5
+aegis/aegis-fast
+aegis/aegis-reasoner
+exit 0
+
+=== Models AFTER hardening, 2.3.0
+aegis/aegis-fast
+aegis/aegis-reasoner
+exit 0
+
+=== Agents AFTER hardening, 1.19.5 (`opencode agent list`, name and mode lines)
+compaction (primary)
+summary (primary)
+title (primary)
+builder (primary)
+essayist (primary)
+planner (primary)
+verifier (subagent)
+
+=== Agents AFTER hardening, 2.3.0 (`opencode debug agents`, id, mode and hidden fields)
+builder  mode=primary  hidden=false
+compaction  mode=primary  hidden=true
+essayist  mode=primary  hidden=false
+planner  mode=primary  hidden=false
+summary  mode=primary  hidden=true
+title  mode=primary  hidden=true
+verifier  mode=subagent  hidden=false

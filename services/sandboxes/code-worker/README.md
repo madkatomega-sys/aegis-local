@@ -5,7 +5,7 @@ Sandboxed MCP worker that holds a copy of the user's repository in the `aegis-wo
 | Tool | What it does |
 |---|---|
 | `list_files`, `read_file`, `diff` | Read the workspace |
-| `apply_patch` | Apply a unified diff with `git apply`, only if `--check` passes |
+| `apply_patch` | Apply a unified diff with `git apply --recount`, only if `--check` passes; a missing final newline is added |
 | `run_check` | Run `pytest`, `ruff`, `mypy`, or `compileall`; a non-zero exit is a failure |
 | `reset_workspace` | Return to the loaded commit (always needs approval) |
 

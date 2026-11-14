@@ -6,8 +6,29 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Evidence for OpenCode 1.19.5 and 2.3.0 on Windows 11 with an RTX 4070, in
+  `docs/validation/opencode-2026-11-14-windows11-rtx4070/`: the tools each agent is offered
+  before and after the hardening below, probes, and ten coding-loop walkthroughs with their
+  audit rows. `docs/PLATFORMS.md` names the OpenCode versions checked.
+
+### Changed
+
+- The OpenCode config denies every OpenCode tool that reaches the host, the web, or other
+  agents (`read`, `glob`, `grep`, `list`, `lsp`, `skill`, `websearch`, `codesearch`,
+  `external_directory`, and `task`, on top of `edit`, `bash`, and `webfetch`), disables the
+  built-in `build`, `plan`, `general`, and `explore` agents, lists only the local models, and
+  makes `planner` the default agent. The planner may delegate only to the verifier. Checked on
+  OpenCode 1.19.5 and 2.3.0.
+- The agent prompts say that workspace paths are relative to the workspace root, never host
+  paths.
+
 ### Fixed
 
+- `code__apply_patch` accepts a diff that is missing its final newline or has miscounted
+  hunk headers (`git apply --recount`). Both are common in small models' diffs, and git rejected
+  them as corrupt. Removed and context lines must still match the file exactly.
 - Release notes now link repository files at the release's tag (relative links broke on the
   release page) and leave out the changelog's link definitions.
 - The 0.1.0 validation report explains that its commit hashes are from the squash-merged

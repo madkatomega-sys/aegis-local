@@ -13,8 +13,10 @@
       }
     }
   },
+  "enabled_providers": ["aegis"],
   "model": "aegis/aegis-reasoner",
   "small_model": "aegis/aegis-fast",
+  "default_agent": "planner",
   "mcp": {
     "aegis": {
       "type": "remote",
@@ -35,14 +37,31 @@
   "permission": {
     "edit": "deny",
     "bash": "deny",
-    "webfetch": "deny"
+    "webfetch": "deny",
+    "websearch": "deny",
+    "codesearch": "deny",
+    "read": "deny",
+    "glob": "deny",
+    "grep": "deny",
+    "list": "deny",
+    "lsp": "deny",
+    "skill": "deny",
+    "external_directory": "deny",
+    "task": "deny"
   },
   "agent": {
+    "build": { "disable": true },
+    "plan": { "disable": true },
+    "general": { "disable": true },
+    "explore": { "disable": true },
     "planner": {
       "description": "Read-only architect. Investigates, plans, and delegates verification. Never writes.",
       "mode": "primary",
       "model": "aegis/aegis-reasoner",
       "prompt": "{file:./agents/planner.md}",
+      "permission": {
+        "task": { "*": "deny", "verifier": "allow" }
+      },
       "tools": {
         "aegis_code__apply_patch": false,
         "aegis_code__reset_workspace": false,

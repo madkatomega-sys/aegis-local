@@ -48,11 +48,29 @@ def test_opencode_config_points_at_loopback(repo_root):
     config = json.loads((repo_root / "config" / "opencode.json").read_text(encoding="utf-8"))
     assert config["provider"]["aegis"]["options"]["baseURL"].startswith("http://127.0.0.1:")
     assert config["mcp"]["aegis"]["url"].startswith("http://127.0.0.1:")
-    # Host-side editing, shell, and web fetches are off: all actions go through the guard.
-    assert config["permission"] == {"edit": "deny", "bash": "deny", "webfetch": "deny"}
     for agent in config["agent"].values():
+        if agent.get("disable"):
+            continue
         prompt = agent["prompt"].removeprefix("{file:").removesuffix("}")
         assert (repo_root / "config" / prompt).is_file()
+
+
+def test_opencode_host_tools_and_builtin_agents_are_off(repo_root):
+    """Every action goes through the guard: OpenCode's own tools that touch the host, the web, or
+    other agents are denied, its built-in agents are disabled, and only local models are listed."""
+    config = json.loads((repo_root / "config" / "opencode.json").read_text(encoding="utf-8"))
+    host_tools = {"edit", "bash", "webfetch", "websearch", "codesearch", "read", "glob", "grep"}
+    host_tools |= {"list", "lsp", "skill", "external_directory", "task"}
+    assert {tool: config["permission"].get(tool) for tool in host_tools} == dict.fromkeys(host_tools, "deny")
+    assert set(config["permission"].values()) == {"deny"}
+    for builtin in ("build", "plan", "general", "explore"):
+        assert config["agent"][builtin] == {"disable": True}
+    assert config["enabled_providers"] == ["aegis"]
+    assert config["default_agent"] == "planner"
+    # Only the planner may delegate, and only to the verifier.
+    delegating = {name for name, agent in config["agent"].items() if "task" in agent.get("permission", {})}
+    assert delegating == {"planner"}
+    assert config["agent"]["planner"]["permission"]["task"] == {"*": "deny", "verifier": "allow"}
 
 
 def test_versions_agree(repo_root):

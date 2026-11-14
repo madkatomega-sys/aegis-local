@@ -1,0 +1,328 @@
+Tools OpenCode offered the model, per request, captured by a logging proxy in front of the
+router. `host` is OpenCode's own tools; `aegis` is the guard's tools. On 2.3.0 the guard's
+tools are reached through `execute` (code mode), so they don't appear in the list.
+
+=== BEFORE hardening (1.19.5 and 2.3.0, 10:21-10:39 local time)
+10:22:54 aegis-reasoner agent='planner'
+   host (6): glob grep read skill task todowrite
+   aegis (17): code__diff code__list_files code__read_file code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode writing__audit_draft writing__get_chunk writing__index_vault writing__search writing__verify_quote
+10:23:06 aegis-reasoner agent='planner'
+   host (6): glob grep read skill task todowrite
+   aegis (17): code__diff code__list_files code__read_file code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode writing__audit_draft writing__get_chunk writing__index_vault writing__search writing__verify_quote
+10:23:41 aegis-reasoner agent='builder'
+   host (6): glob grep read skill task todowrite
+   aegis (14): code__apply_patch code__diff code__list_files code__read_file code__reset_workspace code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode
+10:23:54 aegis-reasoner agent='You are opencode, an interactive CLI tool that hel'
+   host (6): glob grep read skill task todowrite
+   aegis (19): code__apply_patch code__diff code__list_files code__read_file code__reset_workspace code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode writing__audit_draft writing__get_chunk writing__index_vault writing__search writing__verify_quote
+10:24:03 aegis-reasoner agent='essayist'
+   host (6): glob grep read skill task todowrite
+   aegis (4): writing__audit_draft writing__get_chunk writing__search writing__verify_quote
+10:24:12 aegis-reasoner agent='You are opencode, an interactive CLI tool that hel'
+   host (6): glob grep read skill task todowrite
+   aegis (19): code__apply_patch code__diff code__list_files code__read_file code__reset_workspace code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode writing__audit_draft writing__get_chunk writing__index_vault writing__search writing__verify_quote
+10:24:19 aegis-reasoner agent='You are opencode, an interactive CLI tool that hel'
+   host (6): glob grep read skill task todowrite
+   aegis (19): code__apply_patch code__diff code__list_files code__read_file code__reset_workspace code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode writing__audit_draft writing__get_chunk writing__index_vault writing__search writing__verify_quote
+10:24:31 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:24:39 aegis-reasoner agent='builder'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:24:44 aegis-reasoner agent='essayist'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:24:50 aegis-reasoner agent='You are an AI agent running in OpenCode, a coding '
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:24:57 aegis-reasoner agent='You are an AI agent running in OpenCode, a coding '
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:25:30 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:25:49 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:26:41 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:27:27 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:27:38 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:27:50 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:28:07 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:28:24 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:28:39 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:28:48 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:28:53 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:29:01 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:29:07 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:29:18 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:29:25 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:29:35 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:29:42 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:29:51 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:29:57 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:30:06 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:30:12 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:30:26 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:30:35 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:30:49 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:30:57 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:31:12 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:31:21 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:31:34 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:31:42 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:31:55 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:32:04 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:32:20 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:32:29 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:32:45 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:32:54 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:33:10 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:33:19 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:33:36 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:33:44 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:34:01 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:34:12 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:34:29 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:34:39 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:34:56 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:35:05 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:35:23 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:35:34 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:35:39 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:35:56 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:36:06 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:36:25 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:36:35 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:36:54 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:37:04 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:37:23 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:37:34 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:38:02 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:38:17 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:38:28 aegis-reasoner agent='planner'
+   host (8): execute glob grep question read skill subagent websearch
+   aegis (0):
+10:38:54 aegis-reasoner agent='essayist'
+   host (6): glob grep read skill task todowrite
+   aegis (4): writing__audit_draft writing__get_chunk writing__search writing__verify_quote
+10:39:33 aegis-reasoner agent='You are opencode, an interactive CLI tool that hel'
+   host (4): glob grep read skill
+   aegis (19): code__apply_patch code__diff code__list_files code__read_file code__reset_workspace code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode writing__audit_draft writing__get_chunk writing__index_vault writing__search writing__verify_quote
+10:39:46 aegis-reasoner agent='You are opencode, an interactive CLI tool that hel'
+   host (4): glob grep read skill
+   aegis (19): code__apply_patch code__diff code__list_files code__read_file code__reset_workspace code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode writing__audit_draft writing__get_chunk writing__index_vault writing__search writing__verify_quote
+
+=== AFTER hardening (1.19.5 and 2.3.0, 15:42-15:54 local time)
+15:43:28 aegis-reasoner agent='planner'
+   host (2): task todowrite
+   aegis (17): code__diff code__list_files code__read_file code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode writing__audit_draft writing__get_chunk writing__index_vault writing__search writing__verify_quote
+15:43:40 aegis-reasoner agent='builder'
+   host (1): todowrite
+   aegis (14): code__apply_patch code__diff code__list_files code__read_file code__reset_workspace code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode
+15:43:52 aegis-reasoner agent='essayist'
+   host (1): todowrite
+   aegis (4): writing__audit_draft writing__get_chunk writing__search writing__verify_quote
+15:44:00 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:44:07 aegis-reasoner agent='builder'
+   host (3): execute question skill
+   aegis (0):
+15:44:19 aegis-reasoner agent='essayist'
+   host (3): execute question skill
+   aegis (0):
+15:45:23 aegis-reasoner agent='planner'
+   host (2): task todowrite
+   aegis (17): code__diff code__list_files code__read_file code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode writing__audit_draft writing__get_chunk writing__index_vault writing__search writing__verify_quote
+15:46:39 aegis-reasoner agent='planner'
+   host (2): task todowrite
+   aegis (17): code__diff code__list_files code__read_file code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode writing__audit_draft writing__get_chunk writing__index_vault writing__search writing__verify_quote
+15:46:59 aegis-reasoner agent='planner'
+   host (2): task todowrite
+   aegis (17): code__diff code__list_files code__read_file code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode writing__audit_draft writing__get_chunk writing__index_vault writing__search writing__verify_quote
+15:47:15 aegis-reasoner agent='verifier'
+   host (0):
+   aegis (12): code__diff code__list_files code__read_file code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode
+15:47:36 aegis-reasoner agent='verifier'
+   host (0):
+   aegis (12): code__diff code__list_files code__read_file code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode
+15:47:46 aegis-reasoner agent='planner'
+   host (2): task todowrite
+   aegis (17): code__diff code__list_files code__read_file code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode writing__audit_draft writing__get_chunk writing__index_vault writing__search writing__verify_quote
+15:48:01 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:49:16 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:49:28 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:49:46 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:50:11 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:50:33 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:50:57 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:51:22 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:51:49 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:52:10 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:52:33 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:52:56 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:53:05 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:53:12 aegis-reasoner agent='verifier'
+   host (3): execute question skill
+   aegis (0):
+15:53:12 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:53:21 aegis-reasoner agent='verifier'
+   host (3): execute question skill
+   aegis (0):
+15:53:24 aegis-reasoner agent='planner'
+   host (4): execute question skill subagent
+   aegis (0):
+15:53:30 aegis-reasoner agent='builder'
+   host (3): execute question skill
+   aegis (0):
+15:53:36 aegis-reasoner agent='builder'
+   host (3): execute question skill
+   aegis (0):
+15:53:43 aegis-reasoner agent='builder'
+   host (1): todowrite
+   aegis (14): code__apply_patch code__diff code__list_files code__read_file code__reset_workspace code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode
+15:54:04 aegis-reasoner agent='builder'
+   host (1): todowrite
+   aegis (14): code__apply_patch code__diff code__list_files code__read_file code__reset_workspace code__run_check math__check_dimensions math__convert_units math__differentiate math__evaluate math__integrate math__simplify math__solve math__solve_ode
