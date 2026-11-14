@@ -20,7 +20,8 @@ tiers:
   tier0:
     description: Fast dispatcher and quarantined extractor. Small dense model, often on CPU.
     upstream_env: AEGIS_TIER0_URL
-    max_output_tokens: 2048
+    # Large enough that a maximal extraction (see schemas below) can always finish.
+    max_output_tokens: 6144
     max_context_tokens: 16384
   tier1:
     description: Primary reasoner for planning, code, math and physics setup, and drafting.
@@ -56,8 +57,11 @@ escalation:
 chars_per_token: 4
 
 # Every field is bounded. llama-server compiles maxLength and maxItems into the decoding grammar,
-# so a complete extraction always fits within tier0's output cap: about 4,100 characters at most.
-# Without bounds, a model can keep a list going until it hits the cap and returns broken JSON.
+# so an extraction holds at most 4,100 characters of content. Every token is at least one
+# character and the grammar limits each run of whitespace to 21 characters, so a maximal
+# extraction is under 5,600 tokens and always finishes within tier0's 6,144-token cap. Without
+# bounds, a model can keep a list going until it hits the cap and returns broken JSON (seen in
+# 5 of 100 requests during 0.1 validation; see docs/validation/).
 schemas:
   extraction:
     type: object

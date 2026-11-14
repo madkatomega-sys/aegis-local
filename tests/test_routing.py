@@ -44,11 +44,17 @@ def test_extraction_schema_is_bounded(config):
     """Unbounded fields let constrained decoding run into the token cap and return broken JSON."""
     schema = config.schemas["extraction"]
     worst_chars = schema["properties"]["summary"]["maxLength"]
+    strings = 1
     for name in ("facts", "requested_actions", "verbatim_snippets"):
         field = schema["properties"][name]
         worst_chars += field["maxItems"] * field["items"]["maxLength"]
-    # Budget a pessimistic 3 characters per token plus 200 tokens of JSON punctuation.
-    assert worst_chars // 3 + 200 <= config.tiers["tier0"].max_output_tokens
+        strings += field["maxItems"]
+    keys = len(schema["properties"])
+    # A guarantee, not an estimate: every token is at least one character, and each string or key
+    # adds at most 60 characters of quotes, commas, brackets, and grammar-bounded whitespace.
+    worst_tokens = worst_chars + 60 * (strings + keys) + 100
+    assert worst_tokens <= config.tiers["tier0"].max_output_tokens
+    assert worst_tokens + 4000 <= config.tiers["tier0"].max_context_tokens  # room for the input too
 
 
 def test_extractor_rejects_tools(config):

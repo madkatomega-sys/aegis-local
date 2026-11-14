@@ -75,7 +75,7 @@ def test_alias_routes_and_caps_tokens(router):
     assert resp.headers["x-aegis-tier"] == "tier0"
     host, body = fakes.requests[-1]
     assert host == "tier0.test"
-    assert body["model"] == "tier0" and body["max_tokens"] == 2048
+    assert body["model"] == "tier0" and body["max_tokens"] == 6144
 
 
 def test_extractor_gets_the_schema_and_rejects_tools(router):
