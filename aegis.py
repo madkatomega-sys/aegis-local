@@ -5,7 +5,9 @@ Standard library only, so a fresh machine needs nothing but Python 3.11+ to run 
 
     python aegis.py doctor                      check the machine and configuration
     python aegis.py profiles                    list hardware profiles
-    python aegis.py up [--profile NAME]         start llama-server tiers and the container stack
+    python aegis.py up [--profile NAME] [--pull]
+                                                start llama-server tiers and the container stack
+                                                (--pull: use the published, signed images)
     python aegis.py down                        stop everything
     python aegis.py status                      show tiers, guard sessions, pending approvals
     python aegis.py pending                     list calls held for approval
@@ -36,11 +38,14 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+VERSION = "0.1.0"
+REGISTRY = "ghcr.io/madkatomega-sys/aegis-local"
 ROOT = Path(__file__).resolve().parent
 STATE = ROOT / ".aegis"
 RUN = STATE / "run"
 LOGS = STATE / "logs"
 TOKENS = STATE / "tokens.env"
+IMAGES = STATE / "images.env"
 PROFILES = ROOT / "config" / "profiles"
 COMPOSE_FILE = ROOT / "docker-compose.yml"
 ROUTER = "http://127.0.0.1:4000"
@@ -180,9 +185,16 @@ def detect_runtime(cfg: dict[str, str]) -> str | None:
     return None
 
 
+def image_settings(pull: bool) -> dict[str, str]:
+    """Image names for Compose: published release images, or ones built from this checkout."""
+    return {"AEGIS_REGISTRY": REGISTRY, "AEGIS_VERSION": VERSION} if pull else {}
+
+
 def compose(runtime: str, *args: str, env: dict[str, str], capture: bool = False) -> subprocess.CompletedProcess[str]:
+    """Run compose with the image choice recorded by the last `up`, so later commands use the same images."""
     cmd = [runtime, "compose", "-f", str(COMPOSE_FILE), *args]
-    return subprocess.run(cmd, env={**os.environ, **env}, cwd=ROOT, text=True, capture_output=capture, check=False)
+    full = {**os.environ, **read_env_file(IMAGES), **env}
+    return subprocess.run(cmd, env=full, cwd=ROOT, text=True, capture_output=capture, check=False)
 
 
 def llama_bind_host(cfg: dict[str, str], runtime: str | None) -> str:
@@ -395,7 +407,17 @@ def cmd_up(args: argparse.Namespace) -> int:
                 die(f"{tier} did not become healthy within {args.timeout:.0f}s; see .aegis/logs/{tier}.log")
             print(f"{tier}: healthy")
 
-    up_args = ["up", "-d"] + ([] if args.no_build else ["--build"])
+    images = image_settings(args.pull)
+    STATE.mkdir(parents=True, exist_ok=True)
+    IMAGES.write_text("".join(f"{k}={v}\n" for k, v in images.items()), encoding="utf-8")
+    env.update(images)
+    if args.pull:
+        print(f"using published images {REGISTRY}/*:{VERSION} (verify them with cosign; see SECURITY.md)")
+        if compose(runtime, "pull", "--ignore-buildable", env=env).returncode != 0:
+            die("could not pull the release images")
+        up_args = ["up", "-d", "--no-build"]
+    else:
+        up_args = ["up", "-d"] + ([] if args.no_build else ["--build"])
     if compose(runtime, *up_args, env=env).returncode != 0:
         die("container stack failed to start")
     print(f"router: {ROUTER}/v1    guard: {GUARD}/mcp")
@@ -528,6 +550,7 @@ def cmd_env(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="aegis", description="Aegis-Local launcher")
+    parser.add_argument("--version", action="version", version=f"aegis-local {VERSION}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("doctor", help="check the machine and configuration")
@@ -540,6 +563,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--profile")
     p.add_argument("--no-inference", action="store_true", help="don't start llama-server (use one already running)")
     p.add_argument("--no-build", action="store_true", help="don't rebuild container images")
+    p.add_argument("--pull", action="store_true", help=f"use the published {VERSION} images instead of building")
     p.add_argument("--timeout", type=float, default=600.0, help="seconds to wait for each tier to load")
     p.set_defaults(func=cmd_up)
 

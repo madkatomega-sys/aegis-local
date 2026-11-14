@@ -29,6 +29,27 @@ file containing an injection payload) helps a great deal.
 
 Until 1.0, only the latest release and `main` receive security fixes.
 
+| Version | Supported |
+|---|---|
+| 0.1.x | Yes |
+| `main` | Yes |
+
+## Verifying release images
+
+Release images on `ghcr.io/madkatomega-sys/aegis-local/*` are built and signed by the
+repository's [release workflow](.github/workflows/release.yml) with Sigstore keyless signing,
+and carry an SBOM and build provenance. `python aegis.py up --pull` uses them. Before you do,
+you can check that an image was built by that workflow from a release tag:
+
+```bash
+cosign verify ghcr.io/madkatomega-sys/aegis-local/mcp-guard-proxy:0.1.0 \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github.com/madkatomega-sys/aegis-local/\.github/workflows/release\.yml@refs/tags/v'
+```
+
+Repeat for `model-router`, `code-worker`, `math-physics-mcp`, and `writing-auditor`. To inspect
+the SBOM: `docker buildx imagetools inspect <image> --format '{{ json .SBOM }}'`.
+
 ## Scope
 
 In scope: everything in this repository. Out of scope: vulnerabilities in llama.cpp, OpenCode,

@@ -40,6 +40,17 @@ def test_extractor_never_escalates(config):
     assert route.tier.name == "tier0"
 
 
+def test_extraction_schema_is_bounded(config):
+    """Unbounded fields let constrained decoding run into the token cap and return broken JSON."""
+    schema = config.schemas["extraction"]
+    worst_chars = schema["properties"]["summary"]["maxLength"]
+    for name in ("facts", "requested_actions", "verbatim_snippets"):
+        field = schema["properties"][name]
+        worst_chars += field["maxItems"] * field["items"]["maxLength"]
+    # Budget a pessimistic 3 characters per token plus 200 tokens of JSON punctuation.
+    assert worst_chars // 3 + 200 <= config.tiers["tier0"].max_output_tokens
+
+
 def test_extractor_rejects_tools(config):
     with pytest.raises(RoutingError):
         select_route(config, body("aegis-extractor", tools=[{"type": "function"}]), {})

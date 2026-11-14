@@ -44,6 +44,32 @@ def test_opencode_config_points_at_loopback(repo_root):
         assert (repo_root / "config" / prompt).is_file()
 
 
+def test_versions_agree(repo_root):
+    import tomllib
+
+    from aegis_guard import __version__ as guard_version
+    from aegis_router import __version__ as router_version
+
+    with (repo_root / "pyproject.toml").open("rb") as fh:
+        project_version = tomllib.load(fh)["project"]["version"]
+    assert aegis.VERSION == project_version == guard_version == router_version
+    changelog = (repo_root / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert f"## [{aegis.VERSION}]" in changelog
+
+
+def test_pull_uses_the_release_images():
+    assert aegis.image_settings(pull=True) == {"AEGIS_REGISTRY": aegis.REGISTRY, "AEGIS_VERSION": aegis.VERSION}
+    assert aegis.image_settings(pull=False) == {}
+
+
+def test_compose_images_follow_registry_and_version(repo_root):
+    import yaml
+
+    compose = yaml.safe_load((repo_root / "docker-compose.yml").read_text(encoding="utf-8"))
+    for name, service in compose["services"].items():
+        assert service["image"] == f"${{AEGIS_REGISTRY:-aegis-local}}/{name}:${{AEGIS_VERSION:-dev}}"
+
+
 def test_compose_publishes_only_to_loopback(repo_root):
     import yaml
 

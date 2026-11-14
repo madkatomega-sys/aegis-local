@@ -71,7 +71,9 @@ class Handler(BaseHTTPRequestHandler):
             {
                 "object": "chat.completion",
                 "model": body.get("model"),
-                "choices": [{"index": 0, "message": {"role": "assistant", "content": content}, "finish_reason": "stop"}],
+                "choices": [
+                    {"index": 0, "message": {"role": "assistant", "content": content}, "finish_reason": "stop"}
+                ],
             },
         )
 
