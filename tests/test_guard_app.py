@@ -52,7 +52,7 @@ class FakeUpstreams:
 
     @staticmethod
     def _tools(host: str) -> list[dict[str, Any]]:
-        names = ["apply_patch", "read_file"] if host == "code.test" else ["get_issue", "delete_repository"]
+        names = ["apply_patch", "read_file", "run_check"] if host == "code.test" else ["get_issue", "delete_repository"]
         return [{"name": n, "description": n, "inputSchema": {"type": "object"}} for n in names]
 
     def _call(self, host: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -63,6 +63,9 @@ class FakeUpstreams:
             if self.patch_fails:
                 return {"content": [{"type": "text", "text": "patch does not apply"}], "isError": True}
             return {"content": [{"type": "text", "text": "applied"}]}
+        if host == "code.test" and params["name"] == "run_check":
+            fixed = {"diff": "fix"} in self.patch_calls and not self.patch_fails
+            return {"content": [{"type": "text", "text": f"exit code {0 if fixed else 1}"}], "isError": not fixed}
         return {"content": [{"type": "text", "text": "ok"}]}
 
     def _router(self, body: dict[str, Any]) -> httpx.Response:
@@ -238,6 +241,28 @@ def test_repeated_failing_call_trips_the_breaker(guard):
     reset = client.post(f"/admin/sessions/{session}/reset", headers={"Authorization": f"Bearer {ADMIN_TOKEN}"})
     assert reset.status_code == 200
     assert not call(client, session, "code__read_file", {"path": "a"}).get("isError")
+
+
+def test_fixing_the_code_and_rerunning_the_same_check_is_allowed(guard):
+    # Found by the hardware validation: run the tests, patch, run the same tests again.
+    client, _ = guard
+    session = open_session(client)
+    pytest_run = {"check": "pytest"}
+    assert "exit code 1" in text_of(call(client, session, "code__run_check", pytest_run))
+    assert not call(client, session, "code__apply_patch", {"diff": "fix"}).get("isError")
+    rerun = call(client, session, "code__run_check", pytest_run)
+    assert not rerun.get("isError") and "exit code 0" in text_of(rerun)
+
+
+def test_reapplying_a_patch_does_not_excuse_a_retry(guard):
+    client, fakes = guard
+    session = open_session(client)
+    assert not call(client, session, "code__apply_patch", {"diff": "wrong"}).get("isError")
+    assert call(client, session, "code__run_check", {"check": "pytest"})["isError"]
+    fakes.patch_calls.clear()  # the fake's "already applied" state isn't the point here
+    call(client, session, "code__apply_patch", {"diff": "wrong"})
+    again = call(client, session, "code__run_check", {"check": "pytest"})
+    assert "Circuit breaker tripped (retry)" in text_of(again)
 
 
 def test_notifications_are_accepted_without_a_body(guard):

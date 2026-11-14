@@ -42,8 +42,27 @@ tested end to end on a real model. Expect configuration and APIs to change befor
 ### Changed
 
 - Container images use Python 3.15.
-- The extractor schema bounds every field (`maxLength`, `maxItems`), so constrained decoding
-  can't produce an extraction too long to finish within the token cap.
+- The extractor schema bounds every field (`maxLength`, `maxItems`), and tier0's output cap is
+  6,144 tokens, so a maximal extraction always finishes.
+- The extractor alias turns model thinking off (`reasoning: off` in `config/router.yaml`), and
+  every tier0 profile passes `--reasoning-budget 0`. Thinking models reason before the JSON
+  grammar applies, which used up the token budget in validation.
+- `aegis.py up` waits until every container is healthy before it returns.
+
+### Fixed
+
+Found by the hardware validation on Windows 11 with an RTX 4070 (see
+[docs/validation](docs/validation/0.1.0-windows11-rtx4070/README.md)):
+
+- `workspace load` failed with Git's "dubious ownership" error whenever the host user's ID
+  differed from the sandbox's (always on Windows, usually on Linux).
+- `aegis.py status` right after `up` could find the guard not yet listening.
+- The circuit breaker stopped the ordinary fix loop: running a check, applying a patch, and
+  running the same check again tripped the retry rule. A successful call to a tool marked
+  `progress` in `config/policy.yaml` (applying a patch, resetting the workspace, reindexing the
+  vault) now starts a new epoch for the loop rules. The budget and the failure streak still span
+  the session, so repeated failed fix attempts still trip the breaker.
+- `aegis.py deny` printed "denyd".
 
 ### Security
 

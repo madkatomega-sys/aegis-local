@@ -10,6 +10,14 @@ watches the sequence of tool calls from outside and trips when the pattern shows
 - oscillation:  a short cycle of calls repeating (A,B,A,B or A,B,C,A,B,C)
 - near-miss:    a streak of failing calls to one tool with nearly identical arguments
 
+A successful call to a tool that changes what later calls observe (a "progress" tool, such as
+applying a patch) starts a new epoch: the repeat, retry, oscillation, and near-miss rules look only
+at calls made since. Running the tests, fixing the code, and running the same tests again is how
+work gets done, not a loop. Repeating a progress call with arguments it already succeeded with
+doesn't count, so re-applying the same change can't be used to wipe the history. The budget and
+the consecutive-failure count span the whole session, and a progress call doesn't break a failure
+streak: five failed test runs in a row trip the breaker even with a different patch before each.
+
 Once tripped, a breaker stays tripped until the user resets the session. Everything here is
 deterministic; the similarity measure is difflib's ratio on canonical argument strings.
 """
@@ -84,6 +92,8 @@ class CycleBreaker:
     attempts: int = 0
     consecutive_failures: int = 0
     tripped: BreakerDecision | None = None
+    epoch_start: int = 0
+    progress_digests: set[str] = field(default_factory=set)
 
     def check(self, tool: str, arguments: Any) -> BreakerDecision:
         """Decide whether a call may run. Allowed calls are added to the history."""
@@ -101,13 +111,23 @@ class CycleBreaker:
         self.history.append(CallRecord(tool=tool, args=args, digest=digest))
         return BreakerDecision(allowed=True, digest=digest)
 
-    def record_result(self, digest: str, ok: bool) -> None:
-        """Attach the outcome to the most recent pending call with this digest."""
+    def record_result(self, digest: str, ok: bool, progress: bool = False) -> None:
+        """Attach the outcome to the most recent pending call with this digest.
+
+        ``progress`` marks a tool whose success changes what later calls observe. The first
+        success of each distinct progress call starts a new epoch.
+        """
         for record in reversed(self.history):
             if record.digest == digest and record.ok is None:
                 record.ok = ok
                 break
-        self.consecutive_failures = 0 if ok else self.consecutive_failures + 1
+        if not ok:
+            self.consecutive_failures += 1
+        elif not progress:
+            self.consecutive_failures = 0
+        if ok and progress and digest not in self.progress_digests:
+            self.progress_digests.add(digest)
+            self.epoch_start = len(self.history)
 
     def note_attempt(self) -> None:
         """Count an attempt that never reached check() (held for approval, denied by policy)."""
@@ -118,6 +138,8 @@ class CycleBreaker:
         self.attempts = 0
         self.consecutive_failures = 0
         self.tripped = None
+        self.epoch_start = 0
+        self.progress_digests.clear()
 
     @property
     def remaining_budget(self) -> int:
@@ -140,7 +162,8 @@ class CycleBreaker:
                 digest,
             )
 
-        window = self.history[-cfg.window :] if cfg.window > 0 else []
+        epoch = self.history[self.epoch_start :]
+        window = epoch[-cfg.window :] if cfg.window > 0 else []
         same = [r for r in window if r.digest == digest]
         failed_same = sum(1 for r in same if r.ok is False)
         if failed_same >= cfg.max_identical_failures:

@@ -31,7 +31,7 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
 |---|---|---|
 | Malformed or invented tool calls | Grammar/JSON-schema constrained decoding; strict argument validation | `llama-server`, router, guard |
 | Prompt injection leading to an action | Session taint high-water mark; quarantine through the Tier 0 extractor; approvals for mutating tools in tainted sessions | Guard |
-| Infinite loops and retry spirals | Canonical call hashing, oscillation detection, near-duplicate failure streaks, hard budgets | Guard |
+| Infinite loops and retry spirals | Canonical call hashing, oscillation detection, near-duplicate failure streaks, a failure-streak limit that patches don't reset, hard budgets | Guard |
 | Destructive commands | Allowlisted commands, no shell, read-only root, `tmpfs` scratch, dropped capabilities, resource limits | Sandbox workers |
 | Data exfiltration from sandboxes | Internal-only network with no route out | Compose networks |
 | Host file damage | Repo copied into a volume; changes leave only as an exported diff the user applies | `aegis.py workspace` |
@@ -75,6 +75,10 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
 - **Tokens are stored in plain text** in `.aegis/tokens.env` (mode 0600 on Linux; protected by
   the user profile's permissions on Windows). Anyone who can read your home directory can call
   the guard.
+- **A change to the workspace restarts the loop checks.** After a successful `progress` call
+  (a new patch), the guard no longer counts earlier results against identical calls, so the
+  agent can rerun the tests. An agent that keeps producing new patches is stopped by the failure
+  streak (five failed runs in a row) or the session budget, not by the repeat rules.
 - **The code worker trusts its workspace by default.** Set the `code` server to `untrusted` in
   `config/mcp-servers.yaml` when you load a repository you didn't write, so its file contents
   and test output taint the session.

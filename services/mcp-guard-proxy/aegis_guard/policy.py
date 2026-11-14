@@ -36,6 +36,7 @@ class ToolRule:
     mutating: bool = False
     deny: bool = False
     approval: Approval | None = None
+    progress: bool = False  # a success changes what later calls observe (see breaker.py)
 
     def matches(self, tool: str) -> bool:
         return fnmatch.fnmatchcase(tool, self.match)
@@ -86,6 +87,7 @@ class Policy:
                     mutating=bool(entry.get("mutating", False)),
                     deny=bool(entry.get("deny", False)),
                     approval=Approval(approval) if approval else None,
+                    progress=bool(entry.get("progress", False)),
                 )
             )
         approvals = raw.get("approvals", {})

@@ -199,7 +199,8 @@ async def _call_tool(app: FastAPI, session_id: str, state: SessionState, params:
         return _tool_error(f"[AEGIS] {exc}")
 
     ok = not result.get("isError", False)
-    state.breaker.record_result(digest, ok=ok)
+    rule = policy.rule_for(name)
+    state.breaker.record_result(digest, ok=ok, progress=rule is not None and rule.progress)
     if upstream.spec.trust is Trust.UNTRUSTED:
         state.taint.mark(server)
         if policy.taint.quarantine:

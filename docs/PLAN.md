@@ -348,11 +348,14 @@ of the plan.
     eventually kill the server itself; the right fix is a worker process per evaluation. Done in
     0.1: every computation runs in a child process started from a preloaded fork server, and is
     killed when it exceeds `AEGIS_EVAL_TIMEOUT`.
-11. **The extractor schema needs bounds.** Testing with a real 4B model showed that an unbounded
-    schema lets constrained decoding keep a list going until it hits the token cap, which
-    returns truncated, invalid JSON. Every string and array in the extraction schema now has a
-    `maxLength` or `maxItems`, which llama-server compiles into the grammar, so a complete
-    extraction always fits.
+11. **The extractor schema needs bounds, and the extractor must not think.** Testing with a
+    real 4B model showed two ways a schema-constrained request can still return broken JSON.
+    An unbounded schema lets the model keep a list going until it hits the token cap (5 of 100
+    requests). And thinking models reason before the grammar applies, so the reasoning spends
+    the budget (25 of 100 requests). Every string and array in the extraction schema now has a
+    `maxLength` or `maxItems`, tier0's cap covers a maximal extraction, the extractor alias
+    turns thinking off, and tier0 profiles pass `--reasoning-budget 0`. Validation evidence is
+    in [docs/validation](validation/).
 
 ## 11. Risks and open questions
 

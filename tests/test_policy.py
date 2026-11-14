@@ -47,6 +47,8 @@ def test_always_approval_holds_in_clean_session(policy):
 def test_first_matching_rule_wins(policy):
     # code__apply_patch is matched before the code__* catch-all.
     assert policy.rule_for("code__apply_patch").mutating
+    assert policy.rule_for("code__apply_patch").progress
+    assert not policy.rule_for("code__run_check").progress  # running code doesn't change the source
     assert not policy.rule_for("code__read_file").mutating
 
 
