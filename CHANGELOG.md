@@ -6,6 +6,13 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Release notes now link repository files at the release's tag (relative links broke on the
+  release page) and leave out the changelog's link definitions.
+- The 0.1.0 validation report explains that its commit hashes are from the squash-merged
+  validation branch, and lists how the released code differs from what was validated.
+
 ## [0.1.0] - 2026-11-13
 
 The first release. The control plane (router, guard, sandboxes, launcher) is complete and
