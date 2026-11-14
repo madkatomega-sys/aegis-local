@@ -150,7 +150,7 @@ def check_reasoner_schema(base: str, runs: int) -> None:
             {
                 "model": "aegis-reasoner",
                 "temperature": 0.7,
-                "max_tokens": 2048,
+                "max_tokens": 8192,  # tier1 thinks before the grammar applies
                 "messages": [{"role": "user", "content": f"Plan step-by-step how to add a CLI flag #{i} to a tool."}],
                 "response_format": {
                     "type": "json_schema",

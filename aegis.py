@@ -52,6 +52,11 @@ ROUTER = "http://127.0.0.1:4000"
 GUARD = "http://127.0.0.1:4100"
 TIERS = ("tier0", "tier1")
 BACKENDS = {"cuda", "hip", "rocm", "sycl", "vulkan", "metal", "cpu"}
+# The mounted checkout belongs to a host user, not the worker's uid, so Git calls it "dubious
+# ownership". Neither `git -c` nor GIT_CONFIG_* reach the upload-pack process a local clone spawns
+# (Git strips them), so this writes the worker's global config, which lives in its private /tmp
+# HOME and disappears with the container. The mount is read-only, so trusting it is safe.
+SAFE_DIRECTORY = "git config --global safe.directory '*'"
 IS_WINDOWS = os.name == "nt"
 
 
@@ -418,8 +423,9 @@ def cmd_up(args: argparse.Namespace) -> int:
         up_args = ["up", "-d", "--no-build"]
     else:
         up_args = ["up", "-d"] + ([] if args.no_build else ["--build"])
-    if compose(runtime, *up_args, env=env).returncode != 0:
-        die("container stack failed to start")
+    # --wait returns once every container's health check passes, so the stack is usable on return.
+    if compose(runtime, *up_args, "--wait", "--wait-timeout", "180", env=env).returncode != 0:
+        die("container stack failed to start or become healthy; see `docker compose logs`")
     print(f"router: {ROUTER}/v1    guard: {GUARD}/mcp")
     print("next: python aegis.py opencode   (or run `python aegis.py env` and start opencode yourself)")
     return 0
@@ -478,7 +484,8 @@ def cmd_pending(args: argparse.Namespace) -> int:
 def cmd_decide(args: argparse.Namespace) -> int:
     verdict = "approve" if args.command == "approve" else "deny"
     result = _admin(f"/admin/approvals/{args.id}/{verdict}", method="POST")
-    print(f"{args.id}: {verdict}d" if result.get("updated") else f"{args.id}: not pending")
+    done = "approved" if verdict == "approve" else "denied"
+    print(f"{args.id}: {done}" if result.get("updated") else f"{args.id}: not pending")
     return 0
 
 
@@ -496,7 +503,7 @@ def cmd_workspace(args: argparse.Namespace) -> int:
         source = Path(args.path).resolve()
         if not (source / ".git").exists():
             die(f"{source} is not a Git repository")
-        script = "rm -rf /workspace/repo && git -c safe.directory='*' clone --quiet --no-hardlinks /src /workspace/repo"
+        script = f"{SAFE_DIRECTORY} && rm -rf /workspace/repo && git clone --quiet --no-hardlinks /src /workspace/repo"
         result = compose(
             runtime,
             "run",
@@ -514,7 +521,9 @@ def cmd_workspace(args: argparse.Namespace) -> int:
         if result.returncode == 0:
             print(f"loaded the committed HEAD of {source} into the sandbox (uncommitted changes are not copied)")
         return result.returncode
-    script = "cd /workspace/repo && git add -A --intent-to-add >/dev/null 2>&1; git diff HEAD --binary"
+    script = (
+        f"{SAFE_DIRECTORY} && cd /workspace/repo && git add -A --intent-to-add >/dev/null 2>&1; git diff HEAD --binary"
+    )
     result = compose(
         runtime, "run", "--rm", "--no-deps", "--entrypoint", "sh", "code-worker", "-c", script, env=env, capture=True
     )

@@ -1,0 +1,8 @@
+# E4b CUDA: bounded extraction schema (this release), Stage 1 acceptance test
+# llama-server (CUDA 13.5 build b12361) -m Qwen3-4B-Q4_K_M.gguf -c 8192 -ngl 99 --jinja --cache-type-k q8_0 --cache-type-v q8_0 -fa on
+# 100 requests, temperature 0.8, max_tokens 2048 (tier0's router cap), response_format json_schema (strict) from config/router.yaml
+
+cuda: valid 100/100, 116.2 tok/s generation, 633s total, GPU memory used 4416 MiB
+  sample: {   "summary": "Meeting rescheduling and preparation note",   "facts": [     "Meeting time: Tuesday at 3:00 PM",     "Meeting location: Room 4B",     "Preparation requirement: Bring Q3 financial/operational data"   ],   "requested_actions": [     "Update attendees to new meeting time and location", 
+
+Generated tokens per request: mean 730, max 1840 (cap 2048), over 100 requests

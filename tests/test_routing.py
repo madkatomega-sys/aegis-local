@@ -70,6 +70,19 @@ def test_extractor_schema_is_forced(config):
     assert upstream["response_format"]["json_schema"]["name"] == "extraction"
 
 
+def test_extractor_turns_thinking_off(config):
+    """Reasoning before the grammar applies would count against the cap (25/100 failures in validation)."""
+    request = body("aegis-extractor", chat_template_kwargs={"other": 1, "enable_thinking": True})
+    upstream = prepare_upstream_body(request, select_route(config, request, {}))
+    assert upstream["chat_template_kwargs"] == {"other": 1, "enable_thinking": False}
+
+
+def test_other_aliases_leave_thinking_alone(config):
+    for alias in ("aegis-reasoner", "aegis-fast"):
+        request = body(alias)
+        assert "chat_template_kwargs" not in prepare_upstream_body(request, select_route(config, request, {}))
+
+
 def test_max_tokens_is_clamped(config):
     route = select_route(config, body("aegis-fast", max_tokens=10**6), {})
     assert route.max_tokens == config.tiers["tier0"].max_output_tokens

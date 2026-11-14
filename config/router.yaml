@@ -39,6 +39,7 @@ aliases:
     escalate: false        # untrusted text never reaches a tool-capable tier through this alias
     tools: forbidden       # requests that include tools are rejected
     response_schema: extraction
+    reasoning: off         # no thinking before the JSON; see the note above `schemas`
 
 tasks:
   extract: tier0
@@ -59,9 +60,14 @@ chars_per_token: 4
 # Every field is bounded. llama-server compiles maxLength and maxItems into the decoding grammar,
 # so an extraction holds at most 4,100 characters of content. Every token is at least one
 # character and the grammar limits each run of whitespace to 21 characters, so a maximal
-# extraction is under 5,600 tokens and always finishes within tier0's 6,144-token cap. Without
-# bounds, a model can keep a list going until it hits the cap and returns broken JSON (seen in
-# 5 of 100 requests during 0.1 validation; see docs/validation/).
+# extraction is under 5,600 tokens and always finishes within tier0's 6,144-token cap.
+#
+# Two things found during 0.1 validation (docs/validation/) make that bound hold:
+#   - Without maxLength/maxItems, a model can keep a list going until it hits the cap and
+#     return broken JSON (5 of 100 requests with a 4B model).
+#   - Thinking models reason before the grammar applies, and that reasoning counts against the
+#     cap (25 of 100 schema requests ran out). The extractor alias turns thinking off, and
+#     tier0 profiles pass --reasoning-budget 0.
 schemas:
   extraction:
     type: object

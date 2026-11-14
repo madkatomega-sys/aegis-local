@@ -34,6 +34,7 @@ class Alias:
     escalate: bool = True
     tools_forbidden: bool = False
     response_schema: str | None = None
+    reasoning: bool = True
 
 
 @dataclass(frozen=True)
@@ -64,6 +65,7 @@ class RouterConfig:
                 escalate=bool(spec.get("escalate", True)),
                 tools_forbidden=spec.get("tools") == "forbidden",
                 response_schema=spec.get("response_schema"),
+                reasoning=str(spec.get("reasoning", "on")).lower() not in {"off", "false"},
             )
             for name, spec in raw.get("aliases", {}).items()
         }
@@ -180,4 +182,11 @@ def prepare_upstream_body(body: dict[str, Any], route: Route) -> dict[str, Any]:
     if route.response_format is not None:
         # The alias schema always wins over anything the client asked for.
         out["response_format"] = route.response_format
+    if route.alias is not None and not route.alias.reasoning:
+        # Thinking models generate their reasoning before the grammar applies, so it counts against
+        # the token cap and can crowd out the answer. Templates that support it (Qwen3 and others)
+        # skip thinking with this flag; tier0 profiles also pass --reasoning-budget 0.
+        kwargs = dict(out.get("chat_template_kwargs") or {})
+        kwargs["enable_thinking"] = False
+        out["chat_template_kwargs"] = kwargs
     return out

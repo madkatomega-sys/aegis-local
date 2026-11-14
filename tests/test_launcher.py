@@ -10,6 +10,17 @@ def test_every_profile_is_valid(name):
     assert aegis.validate_profile(aegis.load_profile(name)) == []
 
 
+@pytest.mark.parametrize("name", aegis.list_profiles())
+def test_tier0_never_thinks(name):
+    """tier0 serves the extractor; thinking would spend its token budget before the JSON starts."""
+    args = aegis.load_profile(name)["tiers"]["tier0"]["extra_args"]
+    assert args[args.index("--reasoning-budget") + 1] == "0"
+
+
+def test_workspace_commands_trust_the_read_only_mount():
+    assert "safe.directory" in aegis.SAFE_DIRECTORY and "--global" in aegis.SAFE_DIRECTORY
+
+
 def test_profiles_exist():
     assert "cpu-only" in aegis.list_profiles()
     assert len(aegis.list_profiles()) >= 8
