@@ -1,0 +1,129 @@
+name: Release
+
+# A tag v* builds every service image for amd64 and arm64, pushes it to GHCR with an SBOM and
+# build provenance, signs it with Sigstore (keyless, tied to this workflow), and publishes a
+# GitHub release whose notes come from CHANGELOG.md. Only the owner can create v* tags.
+#
+# Run it by hand (workflow_dispatch) for a dry run: everything is built, nothing is pushed.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: version
+        run: python .github/scripts/release_notes.py --check "$GITHUB_REF_TYPE" "$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+
+  images:
+    name: Image (${{ matrix.service }})
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # push to ghcr.io
+      id-token: write   # keyless signing with Sigstore
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - service: model-router
+            context: services/model-router
+          - service: mcp-guard-proxy
+            context: services/mcp-guard-proxy
+          - service: code-worker
+            context: services/sandboxes/code-worker
+          - service: math-physics-mcp
+            context: services/sandboxes/math-physics-mcp
+          - service: writing-auditor
+            context: services/sandboxes/writing-auditor
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.service }}
+      PUBLISH: ${{ needs.check.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        if: env.PUBLISH == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: latest=false
+          tags: |
+            type=raw,value=${{ needs.check.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.check.outputs.version }}
+          labels: |
+            org.opencontainers.image.title=aegis-local ${{ matrix.service }}
+            org.opencontainers.image.description=Aegis-Local ${{ matrix.service }} service
+            org.opencontainers.image.licenses=Apache-2.0
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64,linux/arm64
+          push: ${{ env.PUBLISH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+      - uses: sigstore/cosign-installer@v3
+        if: env.PUBLISH == 'true'
+      - name: Sign the image
+        if: env.PUBLISH == 'true'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"
+      - name: Verify the signature
+        if: env.PUBLISH == 'true'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          cosign verify "${IMAGE}@${DIGEST}" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp "^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/release\.yml@refs/tags/v" \
+            > /dev/null
+          echo "${{ matrix.service }} ${IMAGE}@${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    name: GitHub release
+    needs: [check, images]
+    if: needs.check.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Write release notes from CHANGELOG.md
+        run: python .github/scripts/release_notes.py "${{ needs.check.outputs.version }}" > notes.md
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          flags=()
+          [[ "$TAG" == *-* ]] && flags+=(--prerelease)
+          gh release create "$TAG" --verify-tag --title "Aegis-Local $TAG" --notes-file notes.md "${flags[@]}"

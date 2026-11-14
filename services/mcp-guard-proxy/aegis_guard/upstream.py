@@ -16,6 +16,7 @@ from typing import Any
 
 import httpx
 
+from aegis_guard import __version__
 from aegis_guard.policy import Trust
 
 PROTOCOL_VERSION = "2025-06-18"
@@ -125,7 +126,7 @@ class UpstreamClient:
             {
                 "protocolVersion": PROTOCOL_VERSION,
                 "capabilities": {},
-                "clientInfo": {"name": "aegis-guard", "version": "0.0.1"},
+                "clientInfo": {"name": "aegis-guard", "version": __version__},
             },
         )
         await self._notify("notifications/initialized")

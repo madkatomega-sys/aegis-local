@@ -42,11 +42,15 @@ tools:
     mutating: false
 
   # Code worker.
+  # progress: a successful call changes what later calls see, so the circuit breaker stops
+  # counting earlier results against them (run the tests, fix, run the same tests again).
   - match: "code__apply_patch"
     mutating: true
+    progress: true
   - match: "code__reset_workspace"
     mutating: true
     approval: always
+    progress: true
   - match: "code__run_check"
     mutating: true                    # runs code from the workspace
   - match: "code__*"
@@ -56,6 +60,7 @@ tools:
   - match: "writing__index_vault"
     mutating: true
     approval: never
+    progress: true
   - match: "writing__*"
     mutating: false
 

@@ -1,0 +1,20 @@
+# The shipped server list plus an untrusted fixture registered as "github", for smoke tests.
+version: 1
+
+servers:
+  math:
+    url: http://math-physics-mcp:8000/mcp
+    trust: trusted
+    enabled: true
+  code:
+    url: http://code-worker:8000/mcp
+    trust: trusted
+    enabled: true
+  writing:
+    url: http://writing-auditor:8000/mcp
+    trust: trusted
+    enabled: true
+  github:
+    url: http://fixture-github:8000/mcp
+    trust: untrusted
+    enabled: true

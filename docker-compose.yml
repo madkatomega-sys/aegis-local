@@ -25,7 +25,7 @@ services:
   model-router:
     <<: *hardening
     build: ./services/model-router
-    image: aegis-local/model-router:dev
+    image: ${AEGIS_REGISTRY:-aegis-local}/model-router:${AEGIS_VERSION:-dev}
     environment:
       AEGIS_ROUTER_CONFIG: /config/router.yaml
       AEGIS_TIER0_URL: ${AEGIS_TIER0_URL:-http://host.docker.internal:8080/v1}
@@ -46,7 +46,7 @@ services:
   mcp-guard-proxy:
     <<: *hardening
     build: ./services/mcp-guard-proxy
-    image: aegis-local/mcp-guard-proxy:dev
+    image: ${AEGIS_REGISTRY:-aegis-local}/mcp-guard-proxy:${AEGIS_VERSION:-dev}
     environment:
       AEGIS_POLICY: /config/policy.yaml
       AEGIS_SERVERS: /config/mcp-servers.yaml
@@ -74,7 +74,7 @@ services:
   code-worker:
     <<: *hardening
     build: ./services/sandboxes/code-worker
-    image: aegis-local/code-worker:dev
+    image: ${AEGIS_REGISTRY:-aegis-local}/code-worker:${AEGIS_VERSION:-dev}
     environment:
       AEGIS_WORKSPACE: /workspace/repo
       AEGIS_CHECK_TIMEOUT: "300"
@@ -92,7 +92,7 @@ services:
   math-physics-mcp:
     <<: *hardening
     build: ./services/sandboxes/math-physics-mcp
-    image: aegis-local/math-physics-mcp:dev
+    image: ${AEGIS_REGISTRY:-aegis-local}/math-physics-mcp:${AEGIS_VERSION:-dev}
     environment:
       AEGIS_EVAL_TIMEOUT: "30"
       HOME: /tmp
@@ -108,7 +108,7 @@ services:
   writing-auditor:
     <<: *hardening
     build: ./services/sandboxes/writing-auditor
-    image: aegis-local/writing-auditor:dev
+    image: ${AEGIS_REGISTRY:-aegis-local}/writing-auditor:${AEGIS_VERSION:-dev}
     environment:
       AEGIS_VAULT: /vault
       AEGIS_INDEX: /data/index.sqlite

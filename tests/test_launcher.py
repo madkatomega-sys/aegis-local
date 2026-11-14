@@ -10,6 +10,17 @@ def test_every_profile_is_valid(name):
     assert aegis.validate_profile(aegis.load_profile(name)) == []
 
 
+@pytest.mark.parametrize("name", aegis.list_profiles())
+def test_tier0_never_thinks(name):
+    """tier0 serves the extractor; thinking would spend its token budget before the JSON starts."""
+    args = aegis.load_profile(name)["tiers"]["tier0"]["extra_args"]
+    assert args[args.index("--reasoning-budget") + 1] == "0"
+
+
+def test_workspace_commands_trust_the_read_only_mount():
+    assert "safe.directory" in aegis.SAFE_DIRECTORY and "--global" in aegis.SAFE_DIRECTORY
+
+
 def test_profiles_exist():
     assert "cpu-only" in aegis.list_profiles()
     assert len(aegis.list_profiles()) >= 8
@@ -42,6 +53,32 @@ def test_opencode_config_points_at_loopback(repo_root):
     for agent in config["agent"].values():
         prompt = agent["prompt"].removeprefix("{file:").removesuffix("}")
         assert (repo_root / "config" / prompt).is_file()
+
+
+def test_versions_agree(repo_root):
+    import tomllib
+
+    from aegis_guard import __version__ as guard_version
+    from aegis_router import __version__ as router_version
+
+    with (repo_root / "pyproject.toml").open("rb") as fh:
+        project_version = tomllib.load(fh)["project"]["version"]
+    assert aegis.VERSION == project_version == guard_version == router_version
+    changelog = (repo_root / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert f"## [{aegis.VERSION}]" in changelog
+
+
+def test_pull_uses_the_release_images():
+    assert aegis.image_settings(pull=True) == {"AEGIS_REGISTRY": aegis.REGISTRY, "AEGIS_VERSION": aegis.VERSION}
+    assert aegis.image_settings(pull=False) == {}
+
+
+def test_compose_images_follow_registry_and_version(repo_root):
+    import yaml
+
+    compose = yaml.safe_load((repo_root / "docker-compose.yml").read_text(encoding="utf-8"))
+    for name, service in compose["services"].items():
+        assert service["image"] == f"${{AEGIS_REGISTRY:-aegis-local}}/{name}:${{AEGIS_VERSION:-dev}}"
 
 
 def test_compose_publishes_only_to_loopback(repo_root):

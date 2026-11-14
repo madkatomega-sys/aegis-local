@@ -35,3 +35,31 @@ jobs:
       - uses: actions/checkout@v7
       - run: cp .env.example .env
       - run: docker compose config --quiet
+
+  smoke:
+    name: Stack smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      COMPOSE: docker compose -f docker-compose.yml -f tests/smoke/compose.stub-llm.yml -f tests/smoke/compose.fixtures.yml
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Generate guard tokens
+        run: |
+          echo "AEGIS_CLIENT_TOKEN=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> "$GITHUB_ENV"
+          echo "AEGIS_ADMIN_TOKEN=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> "$GITHUB_ENV"
+      - name: Build and start the stack with a stub model
+        run: |
+          cp .env.example .env
+          $COMPOSE up -d --build --wait --wait-timeout 300
+      - name: Smoke test
+        run: python tests/smoke/smoke.py --client-token "$AEGIS_CLIENT_TOKEN" --admin-token "$AEGIS_ADMIN_TOKEN" --compose "$COMPOSE"
+      - name: Container logs
+        if: failure()
+        run: $COMPOSE logs --no-color --tail 200
+      - name: Stop the stack
+        if: always()
+        run: $COMPOSE down -v

@@ -2,10 +2,10 @@ from aegis_guard.breaker import BreakerConfig, CycleBreaker
 from aegis_guard.canonical import call_digest, canonical_json
 
 
-def run(breaker: CycleBreaker, tool: str, args: dict, ok: bool = True):
+def run(breaker: CycleBreaker, tool: str, args: dict, ok: bool = True, progress: bool = False):
     decision = breaker.check(tool, args)
     if decision.allowed:
-        breaker.record_result(decision.digest, ok)
+        breaker.record_result(decision.digest, ok, progress=progress)
     return decision
 
 
@@ -111,3 +111,52 @@ def test_config_from_policy_file(repo_root):
     config = BreakerConfig.from_policy(raw)
     assert config.max_tool_calls == raw["budgets"]["max_tool_calls_per_session"]
     assert config.near_miss_similarity == raw["breaker"]["near_miss"]["similarity"]
+
+
+def test_progress_call_lets_a_failed_check_run_again():
+    breaker = CycleBreaker()
+    assert run(breaker, "code__run_check", {"check": "pytest"}, ok=False).allowed
+    assert run(breaker, "code__apply_patch", {"diff": "fix 1"}, progress=True).allowed
+    assert run(breaker, "code__run_check", {"check": "pytest"}, ok=False).allowed
+    assert run(breaker, "code__apply_patch", {"diff": "fix 2"}, progress=True).allowed
+    assert run(breaker, "code__run_check", {"check": "pytest"}).allowed
+
+
+def test_failed_progress_call_is_not_progress():
+    breaker = CycleBreaker()
+    run(breaker, "code__run_check", {"check": "pytest"}, ok=False)
+    assert run(breaker, "code__apply_patch", {"diff": "bad"}, ok=False, progress=True).allowed
+    assert breaker.check("code__run_check", {"check": "pytest"}).rule == "retry"
+
+
+def test_repeating_a_progress_call_is_not_progress():
+    breaker = CycleBreaker()
+    run(breaker, "code__apply_patch", {"diff": "same"}, progress=True)
+    run(breaker, "code__run_check", {"check": "pytest"}, ok=False)
+    assert run(breaker, "code__apply_patch", {"diff": "same"}, progress=True).allowed
+    assert breaker.check("code__run_check", {"check": "pytest"}).rule == "retry"
+
+
+def test_progress_does_not_reset_budget_or_failure_streak():
+    breaker = CycleBreaker(BreakerConfig(max_tool_calls=4))
+    for i in range(4):
+        assert run(breaker, "code__apply_patch", {"diff": str(i)}, progress=True).allowed
+    assert breaker.check("code__apply_patch", {"diff": "4"}).rule == "budget"
+
+
+def test_reset_forgets_progress():
+    breaker = CycleBreaker()
+    run(breaker, "code__apply_patch", {"diff": "same"}, progress=True)
+    breaker.reset()
+    run(breaker, "code__run_check", {"check": "pytest"}, ok=False)
+    assert run(breaker, "code__apply_patch", {"diff": "same"}, progress=True).allowed
+    assert run(breaker, "code__run_check", {"check": "pytest"}).allowed
+
+
+def test_patches_between_failing_runs_do_not_break_the_failure_streak():
+    breaker = CycleBreaker(BreakerConfig(max_consecutive_failures=3))
+    for i in range(2):
+        assert run(breaker, "code__run_check", {"check": "pytest"}, ok=False).allowed
+        assert run(breaker, "code__apply_patch", {"diff": f"attempt {i}"}, progress=True).allowed
+    assert run(breaker, "code__run_check", {"check": "pytest"}, ok=False).allowed
+    assert breaker.check("code__apply_patch", {"diff": "attempt 2"}).rule == "failures"

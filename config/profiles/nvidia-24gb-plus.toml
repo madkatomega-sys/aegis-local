@@ -24,7 +24,7 @@ model = ""
 ctx = 16384
 gpu_layers = 99
 port = 8080
-extra_args = ["--jinja"]
+extra_args = ["--jinja", "--reasoning-budget", "0"]
 
 [tiers.tier1]
 role = "reasoner"

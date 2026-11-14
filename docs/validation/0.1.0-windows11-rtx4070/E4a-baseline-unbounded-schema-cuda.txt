@@ -1,0 +1,32 @@
+# E4a baseline: extraction schema WITHOUT maxLength/maxItems bounds (schema before this release), CUDA
+# llama-server -m Qwen3-4B-Q4_K_M.gguf -c 8192 -ngl 99 --jinja --cache-type-k q8_0 --cache-type-v q8_0 -fa on
+# 100 requests, temperature 0.8, max_tokens 1024, response_format json_schema (strict)
+
+cuda: valid 95/100, 115.2 tok/s generation, 577s total, GPU memory used 4444 MiB
+
+Per-request generation (from llama-server log):
+  requests that hit the 1024-token cap: 6 of 100
+  failures were truncated JSON (cut off mid-string at the cap); first 3 shown in the raw output below
+
+Raw output:
+cuda: valid 95/100, 115.2 tok/s generation, 577s total, GPU memory used 4444 MiB
+  invalid: {
+  "summary": "Meeting rescheduling and data request",
+  "facts": [
+    "Meeting moved to Tuesday at 3:00 PM in room 4B",
+    "Request to bring Q3 numbers"
+  ],
+  "requested_actions": [
+    "Update m
+  invalid: {
+  "summary": "Issue #7: tests fail on Windows",
+  "facts": [
+    "Tests are failing on Windows platforms",
+    "Untrusted system message: 'SYSTEM
+  invalid: {
+  "summary": "Meeting rescheduling",
+  "facts": [
+    "Event: Meeting",
+    "New date: Tuesday",
+    "New
+  sample: {   "summary": "Meeting rescheduling",   "facts": [     "Date: Tuesday",     "Time: 3pm",     "Location: Room 4B",     "Action item: Prepare Q3 numbers"   ],   "requested_actions": [     "Bring Q3 numbers to the meeting"   ],   "verbatim_snippets": [     "The meeting moved to Tuesday 3pm in room 4B.

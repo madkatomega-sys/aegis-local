@@ -1,0 +1,12 @@
+# E0 environment, captured 2026-11-13 17:40:46 -05:00
+OS: Microsoft Windows 11 Pro 10.0.26300 build 26300
+CPU: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz (8 cores, 16 threads)
+RAM: 31.9 GB
+GPU: NVIDIA GeForce RTX 4070, 12282 MiB, 610.88
+Docker: client 29.9.3, server 29.9.3 (linux/amd64)
+Docker Compose: 5.7.0
+Python (host): Python 3.12.10
+Git commit under test: 136a449 (E1 to E6); earlier runs: E4a before the schema bounds, E5a at 7cbc90d, E5b at 1d85577
+llama.cpp CUDA build: version 1.0.0-dev (build b12361, commit 951d465f5), Clang 20.1.8, Windows x86_64; release asset llama-b12361-bin-win-cuda-13.5-x64.zip + cudart-llama-bin-win-cuda-13.5-x64.zip
+llama.cpp Vulkan build: version 1.0.0-dev (build b12361, commit 951d465f5), Clang 20.1.8, Windows x86_64; release asset llama-b12361-bin-win-vulkan-x64.zip
+Model: Qwen3-4B-Q4_K_M.gguf from huggingface.co/Qwen/Qwen3-4B-GGUF, 2497280256 bytes, sha256 7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5

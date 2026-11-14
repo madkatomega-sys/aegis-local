@@ -1,0 +1,44 @@
+# E1 lint and unit tests at 136a449 (Windows host, Python 3.12.10)
+
+$ ruff check .
+All checks passed!
+
+$ ruff format --check .
+53 files already formatted
+
+$ python -m pytest -v -p no:warnings
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.2.0, pluggy-1.7.0
+rootdir: C:\Users\madkat\Documents\flagship\aegis-local
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.16.0, platformdirs-4.14.5
+collected 116 items
+
+tests\test_breaker.py ...................                                [ 16%]
+tests\test_guard_app.py ...........                                      [ 25%]
+tests\test_launcher.py ..............................                    [ 51%]
+tests\test_mathcore.py .............                                     [ 62%]
+tests\test_policy.py ............                                        [ 73%]
+tests\test_release.py .....                                              [ 77%]
+tests\test_router_app.py ........                                        [ 84%]
+tests\test_routing.py .............                                      [ 95%]
+tests\test_vault.py .....                                                [100%]
+
+============================= 116 passed in 7.03s =============================
+
+$ python aegis.py --version
+aegis-local 0.1.0
+
+$ python aegis.py profiles
+profile              vendor    vram  backend (windows)  tested
+amd-16gb             amd         16  hip                no
+amd-24gb             amd         24  hip                no
+amd-unified-128gb    amd         96  vulkan             no
+cpu-only             cpu          0  cpu                no
+intel-arc-12gb       intel       12  sycl               no
+intel-arc-16gb       intel       16  sycl               no
+nvidia-12gb          nvidia      12  cuda               no
+nvidia-16gb          nvidia      16  cuda               no
+nvidia-24gb-plus     nvidia      24  cuda               no
+nvidia-8gb           nvidia       8  cuda               no

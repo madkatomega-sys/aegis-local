@@ -122,4 +122,9 @@ async def chat_completions(request: Request):
         upstream = await client.post(url, json=payload)
     except httpx.HTTPError as exc:
         return error(f"{route.tier.name} unavailable: {exc}", 502)
-    return JSONResponse(upstream.json(), status_code=upstream.status_code, headers=trace)
+    try:
+        data = upstream.json()
+    except ValueError:
+        snippet = upstream.text[:200]
+        return error(f"{route.tier.name} returned HTTP {upstream.status_code} with a non-JSON body: {snippet}", 502)
+    return JSONResponse(data, status_code=upstream.status_code, headers=trace)

@@ -7,14 +7,16 @@ code, math, physics, and writing.
 
 [![CI](https://github.com/madkatomega-sys/aegis-local/actions/workflows/ci.yml/badge.svg)](https://github.com/madkatomega-sys/aegis-local/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)
+[![Release](https://img.shields.io/github/v/release/madkatomega-sys/aegis-local?include_prereleases)](https://github.com/madkatomega-sys/aegis-local/releases)
+![Status: alpha](https://img.shields.io/badge/status-alpha-orange.svg)
 
-> **Status: pre-alpha.** The architecture, configuration schemas, and control-plane logic (loop
-> detection, taint tracking, approvals, tier routing) are in place and unit-tested, and the guard
-> proxy has been exercised against the math worker over real MCP. Container images, the full
-> stack with a model, and the OpenCode integration haven't been verified end to end yet. See the
-> [plan](docs/PLAN.md#9-milestones-and-acceptance-criteria) for what's next, and the
-> [contributing guide](CONTRIBUTING.md) if you'd like to help build it.
+> **Status: 0.1, alpha.** The router, guard proxy, sandboxes, and launcher work end to end: a
+> real model on a local GPU, routed and schema-constrained, with untrusted content quarantined,
+> mutating calls held for approval, loops stopped, and sandboxes cut off from the network. What
+> was verified, on which hardware, is listed in the [release notes](CHANGELOG.md) and
+> [docs/PLATFORMS.md](docs/PLATFORMS.md#verified-configurations). Configuration and APIs may
+> change before 1.0. See the [plan](docs/PLAN.md#9-milestones-and-acceptance-criteria) for
+> what's next.
 
 ---
 
@@ -50,20 +52,32 @@ OpenCode ──► model-router :4000 ──► llama-server (native GPU, one pe
 
 ## Quick start
 
-> These commands describe the target workflow. `doctor` and `profiles` are tested; `up`
-> and the workspace commands are written but not yet verified on real hardware.
+Requirements: Python 3.11+, Docker or Podman, a [`llama-server`](https://github.com/ggml-org/llama.cpp/releases)
+build for your GPU, and GGUF model files of your choice. Platform details are in
+[docs/PLATFORMS.md](docs/PLATFORMS.md).
 
 ```bash
-git clone https://github.com/madkatomega-sys/aegis-local.git
+git clone --branch v0.1.0 https://github.com/madkatomega-sys/aegis-local.git
 cd aegis-local
-cp .env.example .env
+cp .env.example .env          # then set AEGIS_LLAMA_SERVER and the two model paths
 python aegis.py doctor
-python aegis.py up --profile nvidia-12gb
-opencode
+python aegis.py up --profile nvidia-12gb --pull
+python aegis.py opencode
 ```
 
-Requirements: Python 3.11+, Docker or Podman, a `llama-server` build for your GPU, and GGUF model
-files of your choice. Platform details are in [docs/PLATFORMS.md](docs/PLATFORMS.md).
+`--pull` runs the published container images, which are signed; see
+[SECURITY.md](SECURITY.md#verifying-release-images) to verify them. Without it, `up` builds the
+images from your checkout.
+
+To work on a repository, copy it into the sandbox and bring the changes back as a patch:
+
+```bash
+python aegis.py workspace load ../my-project
+python aegis.py workspace export      # writes exports/aegis-<time>.patch for you to review
+```
+
+When the guard holds a call, `python aegis.py pending` shows it with the reason and the
+untrusted sources the session has read; `python aegis.py approve <id>` lets it through once.
 
 ## Hardware profiles
 

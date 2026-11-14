@@ -292,16 +292,20 @@ about safety changes. That is the test of a correct split.
 
 ## 9. Milestones and acceptance criteria
 
-| Milestone | Contents | Exit criteria |
-|---|---|---|
-| **M0 Foundation** | License, README, governance and contribution docs, this plan, repository layout, config schemas, service skeletons, unit tests, CI | CI green; `docker compose config` validates; docs reviewed |
-| **M1 Inference** | `aegis.py doctor/up/down/status`, profile loader, native launch on both OSes | One profile verified per GPU vendor available to maintainers |
-| **M2 Router** | Alias routing, streaming pass-through, schema injection, token caps | Routing tests; OpenCode chats through the router |
-| **M3 Guard** | MCP gateway, upstream sessions, breaker, taint, quarantine, approvals, audit log | Injection fixture test passes; breaker trips on scripted loops |
-| **M4 Sandboxes** | code, math-physics, writing workers | Each worker's tests pass; egress test fails to connect, as intended |
-| **M5 Integration** | OpenCode config, agents, status plugin, GitHub upstream | Clean-clone walkthrough on Windows 11 and Linux |
-| **M6 Release 0.1** | Threat model review, signed container images, tested profile matrix, docs pass | Tagged release, published images, changelog |
-| **Later** | Per-value taint (CaMeL-style planner programs), Lean 4 worker, NLI claim checker, Qdrant hybrid search, embedding-based similarity, vLLM backend | Proposed through issues and design docs |
+| Milestone | Contents | Exit criteria | Status in 0.1 |
+|---|---|---|---|
+| **M0 Foundation** | License, README, governance and contribution docs, this plan, repository layout, config schemas, service skeletons, unit tests, CI | CI green; `docker compose config` validates; docs reviewed | Done |
+| **M1 Inference** | `aegis.py doctor/up/down/status`, profile loader, native launch on both OSes | One profile verified per GPU vendor available to maintainers | NVIDIA verified on Windows 11 (CUDA and Vulkan). Linux native launch is covered by CI only with a stub model. AMD and Intel profiles await testers. |
+| **M2 Router** | Alias routing, streaming pass-through, schema injection, token caps | Routing tests; OpenCode chats through the router | Done, except the OpenCode chat check (below) |
+| **M3 Guard** | MCP gateway, upstream sessions, breaker, taint, quarantine, approvals, audit log | Injection fixture test passes; breaker trips on scripted loops | Done: unit-level and full-stack fixture tests |
+| **M4 Sandboxes** | code, math-physics, writing workers | Each worker's tests pass; egress test fails to connect, as intended | Done: isolation is checked on every CI run |
+| **M5 Integration** | OpenCode config, agents, status plugin, GitHub upstream | Clean-clone walkthrough on Windows 11 and Linux | Partly: launcher walkthrough done on Windows 11; OpenCode and the hosted GitHub MCP endpoint are configured but not yet verified |
+| **M6 Release 0.1** | Threat model review, signed container images, tested profile matrix, docs pass | Tagged release, published images, changelog | Done |
+| **Later** | Per-value taint (CaMeL-style planner programs), Lean 4 worker, NLI claim checker, Qdrant hybrid search, embedding-based similarity, vLLM backend | Proposed through issues and design docs | |
+
+The open items from M1 and M5 carry into 0.2: an OpenCode walkthrough with a pinned minimum
+version, the GitHub upstream against a real token, a native Linux run on real hardware, and AMD
+and Intel profile reports.
 
 ## 10. Design corrections made while scaffolding
 
@@ -341,7 +345,17 @@ of the plan.
    code from calling tools or approving its own actions. One internal network per worker keeps
    workers from reaching each other.
 10. **The math worker's per-call time limit moved to M4.** A process-wide CPU limit would
-    eventually kill the server itself; the right fix is a worker process per evaluation.
+    eventually kill the server itself; the right fix is a worker process per evaluation. Done in
+    0.1: every computation runs in a child process started from a preloaded fork server, and is
+    killed when it exceeds `AEGIS_EVAL_TIMEOUT`.
+11. **The extractor schema needs bounds, and the extractor must not think.** Testing with a
+    real 4B model showed two ways a schema-constrained request can still return broken JSON.
+    An unbounded schema lets the model keep a list going until it hits the token cap (5 of 100
+    requests). And thinking models reason before the grammar applies, so the reasoning spends
+    the budget (25 of 100 requests). Every string and array in the extraction schema now has a
+    `maxLength` or `maxItems`, tier0's cap covers a maximal extraction, the extractor alias
+    turns thinking off, and tier0 profiles pass `--reasoning-budget 0`. Validation evidence is
+    in [docs/validation](validation/).
 
 ## 11. Risks and open questions
 

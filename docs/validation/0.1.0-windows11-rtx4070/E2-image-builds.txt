@@ -1,0 +1,26 @@
+# E2 container image builds at 136a449
+
+$ docker compose build --pull
+
+#49 [mcp-guard-proxy] resolving provenance for metadata file
+#49 DONE 0.0s
+ Image aegis-local/writing-auditor:dev Built 
+ Image aegis-local/code-worker:dev Built 
+ Image aegis-local/math-physics-mcp:dev Built 
+ Image aegis-local/mcp-guard-proxy:dev Built 
+ Image aegis-local/model-router:dev Built 
+build exit 0, 4s
+
+Images:
+aegis-local/mcp-guard-proxy:dev  3fd0e69abab0  250MB
+aegis-local/model-router:dev  c2082f5b7cb0  250MB
+aegis-local/math-physics-mcp:dev  c175664b39f4  640MB
+aegis-local/writing-auditor:dev  cb2f1820f5fe  243MB
+aegis-local/code-worker:dev  e8c5488e97da  472MB
+
+Runtime versions inside each image:
+  model-router: Python 3.15.2 fastapi=0.162.7 uvicorn=0.54.0 httpx=0.28.1 PyYAML=6.0.3, uid 10001
+  mcp-guard-proxy: Python 3.15.2 fastapi=0.162.7 uvicorn=0.54.0 httpx=0.28.1 PyYAML=6.0.3, uid 10001
+  code-worker: Python 3.15.2 uvicorn=0.54.0 httpx=0.28.1 mcp=1.30.0 pytest=9.2.0 ruff=0.17.5 mypy=1.20.2, uid 10001
+  math-physics-mcp: Python 3.15.2 uvicorn=0.54.0 httpx=0.28.1 mcp=1.30.0 sympy=1.14.0 pint=0.26.2 numpy=2.5.4 scipy=1.18.1, uid 10001
+  writing-auditor: Python 3.15.2 uvicorn=0.54.0 httpx=0.28.1 mcp=1.30.0, uid 10001

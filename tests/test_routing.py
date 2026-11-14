@@ -40,6 +40,23 @@ def test_extractor_never_escalates(config):
     assert route.tier.name == "tier0"
 
 
+def test_extraction_schema_is_bounded(config):
+    """Unbounded fields let constrained decoding run into the token cap and return broken JSON."""
+    schema = config.schemas["extraction"]
+    worst_chars = schema["properties"]["summary"]["maxLength"]
+    strings = 1
+    for name in ("facts", "requested_actions", "verbatim_snippets"):
+        field = schema["properties"][name]
+        worst_chars += field["maxItems"] * field["items"]["maxLength"]
+        strings += field["maxItems"]
+    keys = len(schema["properties"])
+    # A guarantee, not an estimate: every token is at least one character, and each string or key
+    # adds at most 60 characters of quotes, commas, brackets, and grammar-bounded whitespace.
+    worst_tokens = worst_chars + 60 * (strings + keys) + 100
+    assert worst_tokens <= config.tiers["tier0"].max_output_tokens
+    assert worst_tokens + 4000 <= config.tiers["tier0"].max_context_tokens  # room for the input too
+
+
 def test_extractor_rejects_tools(config):
     with pytest.raises(RoutingError):
         select_route(config, body("aegis-extractor", tools=[{"type": "function"}]), {})
@@ -51,6 +68,19 @@ def test_extractor_schema_is_forced(config):
     upstream = prepare_upstream_body(request, route)
     assert upstream["response_format"]["type"] == "json_schema"
     assert upstream["response_format"]["json_schema"]["name"] == "extraction"
+
+
+def test_extractor_turns_thinking_off(config):
+    """Reasoning before the grammar applies would count against the cap (25/100 failures in validation)."""
+    request = body("aegis-extractor", chat_template_kwargs={"other": 1, "enable_thinking": True})
+    upstream = prepare_upstream_body(request, select_route(config, request, {}))
+    assert upstream["chat_template_kwargs"] == {"other": 1, "enable_thinking": False}
+
+
+def test_other_aliases_leave_thinking_alone(config):
+    for alias in ("aegis-reasoner", "aegis-fast"):
+        request = body(alias)
+        assert "chat_template_kwargs" not in prepare_upstream_body(request, select_route(config, request, {}))
 
 
 def test_max_tokens_is_clamped(config):
