@@ -6,7 +6,7 @@ RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin aegis
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY server.py .
+COPY mathcore.py server.py ./
 
 USER 10001
 EXPOSE 8000

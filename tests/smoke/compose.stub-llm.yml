@@ -1,0 +1,24 @@
+# Smoke-test overlay: replaces the host's llama-server tiers with a stub model server, so the
+# whole stack runs in CI without a GPU or model weights.
+
+services:
+  stub-llm:
+    image: python:3.12-slim
+    command: ["python", "/smoke/stub_llm.py"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      - ./tests/smoke:/smoke:ro
+    networks: [control]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  model-router:
+    environment:
+      AEGIS_TIER0_URL: http://stub-llm:8000/v1
+      AEGIS_TIER1_URL: http://stub-llm:8000/v1
+    depends_on: [stub-llm]

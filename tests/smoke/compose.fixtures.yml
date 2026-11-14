@@ -1,0 +1,37 @@
+# Smoke-test overlay: adds an untrusted fixture MCP server (registered as "github") and
+# shortens the math worker's time limit so the timeout check runs quickly.
+#
+#   docker compose -f docker-compose.yml -f tests/smoke/compose.fixtures.yml up -d --build --wait
+
+services:
+  fixture-github:
+    image: ${AEGIS_REGISTRY:-aegis-local}/math-physics-mcp:${AEGIS_VERSION:-dev}
+    command: ["python", "/smoke/fixture_mcp.py"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      - ./tests/smoke:/smoke:ro
+    tmpfs:
+      - /tmp:size=16m
+    networks: [sandbox-fixture]
+    depends_on: [math-physics-mcp]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  math-physics-mcp:
+    environment:
+      AEGIS_EVAL_TIMEOUT: "3"
+
+  mcp-guard-proxy:
+    volumes:
+      - ./tests/smoke/mcp-servers.yaml:/config/mcp-servers.yaml:ro
+    networks: [control, sandbox-code, sandbox-math, sandbox-writing, sandbox-fixture]
+    depends_on: [model-router, code-worker, math-physics-mcp, writing-auditor, fixture-github]
+
+networks:
+  sandbox-fixture:
+    internal: true

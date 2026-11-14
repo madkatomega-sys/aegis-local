@@ -36,7 +36,7 @@ from aegis_guard.upstream import ServerSpec, UpstreamClient, UpstreamError
 
 log = logging.getLogger("aegis.guard")
 
-SUPPORTED_PROTOCOLS = ("2025-06-18", "2025-03-26")
+SUPPORTED_PROTOCOLS = ("2025-11-25", "2025-06-18", "2025-03-26")
 
 
 @dataclass

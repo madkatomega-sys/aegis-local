@@ -1,3 +1,8 @@
 pytest>=9.2.0,<10
 ruff>=0.17.4,<1
 pyyaml>=6.0.3,<7
+# Service dependencies the tests import directly
+fastapi>=0.162.3,<1
+httpx>=0.28.1,<1
+sympy>=1.13,<2
+pint>=0.24,<1
