@@ -1,7 +1,6 @@
 import json
 
 import pytest
-import yaml
 
 import aegis
 
@@ -74,14 +73,16 @@ def test_opencode_host_tools_and_builtin_agents_are_off(repo_root):
     assert config["agent"]["planner"]["permission"]["task"] == {"*": "deny", "verifier": "allow"}
 
 
-def test_planner_cannot_change_the_workspace(repo_root):
-    """Every code tool that changes the workspace (a progress tool in the policy) is off for the planner."""
+def test_planner_cannot_change_the_workspace(repo_root, code_worker_tools):
+    """The planner keeps only the code worker's readers and run_check; every other worker tool is off.
+
+    The tools come from the worker's MCP registry, so a new writer is caught whatever its policy rule says."""
     config = json.loads((repo_root / "config" / "opencode.json").read_text(encoding="utf-8"))
-    policy = yaml.safe_load((repo_root / "config" / "policy.yaml").read_text(encoding="utf-8"))
-    changing = {rule["match"] for rule in policy["tools"] if rule["match"].startswith("code__") and "progress" in rule}
-    assert changing == {"code__apply_patch", "code__replace_in_file", "code__reset_workspace"}
+    allowed = {"list_files", "read_file", "diff", "run_check"}
+    assert allowed.issubset(code_worker_tools)
     planner = config["agent"]["planner"]["tools"]
-    assert all(planner.get(f"aegis_{tool}") is False for tool in changing)
+    left_on = {tool for tool in code_worker_tools - allowed if planner.get(f"aegis_code__{tool}") is not False}
+    assert left_on == set()
 
 
 def test_versions_agree(repo_root):

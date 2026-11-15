@@ -1,6 +1,6 @@
 """The code worker's tools, run against a throwaway Git repository instead of the container's volume."""
 
-import importlib.util
+import re
 import subprocess
 import sys
 
@@ -13,17 +13,13 @@ linux_only = pytest.mark.skipif(sys.platform == "win32", reason="the code worker
 
 
 @pytest.fixture
-def worker(repo_root, tmp_path, monkeypatch):
-    path = repo_root / "services" / "sandboxes" / "code-worker" / "server.py"
-    spec = importlib.util.spec_from_file_location("code_worker_server", path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+def worker(code_worker, tmp_path, monkeypatch):
     workspace = tmp_path / "repo"
     workspace.mkdir()
     (workspace / "calc.py").write_bytes(b"def mean(values):\n    return sum(values) / (len(values) + 1)\n")
     subprocess.run(["git", "init", "-q"], cwd=workspace, check=True)
-    monkeypatch.setattr(module, "WORKSPACE", workspace)
-    return module
+    monkeypatch.setattr(code_worker, "WORKSPACE", workspace)
+    return code_worker
 
 
 FIX = (
@@ -107,6 +103,41 @@ def test_replace_in_file_keeps_crlf_line_endings(worker):
     (worker.WORKSPACE / "calc.py").write_bytes(f"def mean(values):\r\n{BUGGY}\r\n".encode())
     worker.replace_in_file("calc.py", f"def mean(values):\n{BUGGY}\n", f"def mean(values):\n{FIXED}\n")
     assert calc(worker) == f"def mean(values):\r\n{FIXED}\r\n".encode()
+
+
+MIXED = b"a = 1\r\nb = 2\nc = 3\n"
+
+
+def test_replace_in_file_matches_the_lf_lines_of_a_mixed_file(worker):
+    """A file with some CRLF lines must still match its LF lines as given, and keep them LF."""
+    (worker.WORKSPACE / "calc.py").write_bytes(MIXED)
+    worker.replace_in_file("calc.py", "b = 2\nc = 3", "b = 20\nc = 30\nd = 40")
+    assert calc(worker) == b"a = 1\r\nb = 20\nc = 30\nd = 40\n"
+
+
+def test_replace_in_file_keeps_the_crlf_line_of_a_mixed_file_crlf(worker):
+    (worker.WORKSPACE / "calc.py").write_bytes(MIXED)
+    worker.replace_in_file("calc.py", "a = 1", "a = 10\nz = 0")
+    assert calc(worker) == b"a = 10\r\nz = 0\r\nb = 2\nc = 3\n"
+
+
+ROUND_TRIP = {
+    "crlf": b"x = 1\r\ny = 2\r\n",
+    "form feed": b"x = 1\x0cy = 2\nz = 3\n",
+    "lone cr": b"x = 1\ry = 2\n",
+    "unicode line separator": "s = 'a b'\nt = 1\n".encode(),
+    "no final newline": b"x = 1\ny = 2",
+}
+
+
+@pytest.mark.parametrize("content", ROUND_TRIP.values(), ids=ROUND_TRIP.keys())
+def test_what_read_file_shows_can_be_replaced(worker, content):
+    """Copying read_file's lines without the line numbers gives text replace_in_file finds."""
+    (worker.WORKSPACE / "calc.py").write_bytes(content)
+    shown = worker.read_file("calc.py")
+    copied = "\n".join(re.sub(r"^\s*\d+\t", "", line, count=1) for line in shown.split("\n"))
+    worker.replace_in_file("calc.py", copied, "replaced = True")
+    assert calc(worker).startswith(b"replaced = True")
 
 
 def test_replace_in_file_does_not_double_a_crlf_the_model_sent(worker):

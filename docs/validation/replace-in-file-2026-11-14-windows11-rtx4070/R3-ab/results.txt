@@ -1,0 +1,53 @@
+Every A/B run, scored by applying its exported patch to a clean clone of the fixture and running
+pytest there. `fixed` is that result; nothing the model said counts. `edits ok` counts successful
+apply_patch and replace_in_file calls. Events are rows in ledger.txt. The load columns are the
+largest GPU memory use, the mean GPU load, and whether Genshin Impact or Firefox was running,
+sampled every 5 s during the run; the first three runs finished before sampling was added.
+
+run            arm  outcome              seconds  timed out  trips     edits ok  events     GPU mem   load  game firefox   pytest on the clean clone
+calc-A-01      A    no edit applied           78  no         retry            0  98-103     not recorded                 no patch
+calc-A-02      A    never tried to edit      141  no         -                0  129-130     6480 MiB  88%  no   yes     no patch
+calc-A-03      A    no edit applied           37  no         retry            0  145-150     6475 MiB  68%  no   yes     no patch
+calc-A-04      A    fixed                     50  no         -                1  177-181     6460 MiB  74%  no   yes     1 passed in 0.01s
+calc-A-05      A    fixed                     46  no         -                1  195-200     6467 MiB  72%  no   yes     1 passed in 0.01s
+calc-A-06      A    no edit applied           61  no         retry            0  227-232     6477 MiB  86%  no   yes     no patch
+calc-A-07      A    no edit applied          154  no         -                0  244-247     6533 MiB  90%  no   yes     no patch
+calc-A-08      A    never tried to edit      131  no         -                0  272-273     6531 MiB  91%  no   yes     no patch
+calc-A-09      A    no edit applied           92  no         retry            0  290-295     6531 MiB  85%  no   yes     no patch
+calc-A-10      A    no edit applied          189  no         -                0  322-325     6531 MiB  92%  no   yes     no patch
+calc-B-01      B    fixed                     38  no         -                1  104-108    not recorded                 1 passed in 0.02s
+calc-B-02      B    fixed                     59  no         -                1  123-128     6475 MiB  76%  no   yes     1 passed in 0.01s
+calc-B-03      B    fixed                     38  no         -                1  151-155     6466 MiB  81%  no   yes     1 passed in 0.01s
+calc-B-04      B    fixed                     49  no         -                1  171-176     6464 MiB  59%  no   yes     1 passed in 0.01s
+calc-B-05      B    fixed                     51  no         -                1  201-205     6480 MiB  41%  no   yes     1 passed in 0.01s
+calc-B-06      B    fixed                     41  no         -                1  222-226     6477 MiB  70%  no   yes     1 passed in 0.01s
+calc-B-07      B    fixed                     63  no         -                1  248-252     6531 MiB  81%  no   yes     1 passed in 0.01s
+calc-B-08      B    fixed                     43  no         -                1  266-271     6531 MiB  82%  no   yes     1 passed in 0.01s
+calc-B-09      B    fixed                     67  no         -                1  296-300     6531 MiB  81%  no   yes     1 passed in 0.01s
+calc-B-10      B    fixed                     46  no         -                1  316-321     6531 MiB  56%  no   yes     1 passed in 0.01s
+chunks-A-01    A    no edit applied          178  no         -                0  109-112    not recorded                 no patch
+chunks-A-02    A    never tried to edit       67  no         -                0  141-144     6478 MiB  86%  no   yes     no patch
+chunks-A-03    A    no edit applied           92  no         retry            0  156-161     6466 MiB  83%  no   yes     no patch
+chunks-A-04    A    no edit applied          109  no         retry            0  189-194     6467 MiB  90%  no   yes     no patch
+chunks-A-05    A    fixed                     65  no         -                1  206-211     6476 MiB  89%  no   yes     2 passed in 0.02s
+chunks-A-06    A    no edit applied          133  no         retry            0  238-243     6512 MiB  93%  no   yes     no patch
+chunks-A-07    A    no edit applied           67  no         retry            0  253-257     6531 MiB  81%  no   yes     no patch
+chunks-A-08    A    no edit applied           92  no         retry            0  284-289     6531 MiB  78%  no   yes     no patch
+chunks-A-09    A    no edit applied           94  no         retry            0  301-305     6531 MiB  90%  no   yes     no patch
+chunks-A-10    A    edited, tests fail       198  no         -                1  332-336     6784 MiB  93%  yes  yes     1 failed, 1 passed in 0.16s
+chunks-B-01    B    fixed                     84  no         -                2  116-122     6280 MiB  72%  no   no      2 passed in 0.02s
+chunks-B-02    B    fixed                    138  no         -                3  131-140     6469 MiB  89%  no   yes     2 passed in 0.01s
+chunks-B-03    B    edited, tests fail       138  no         retry            1  162-170     6470 MiB  89%  no   yes     1 failed, 1 passed in 0.17s
+chunks-B-04    B    fixed                    114  no         -                2  182-188     6495 MiB  83%  no   yes     2 passed in 0.02s
+chunks-B-05    B    edited, tests fail       128  no         retry            1  212-221     6504 MiB  88%  no   yes     2 failed in 0.21s
+chunks-B-06    B    fixed                    145  no         -                1  233-237     6498 MiB  89%  no   yes     2 passed in 0.01s
+chunks-B-07    B    fixed                    100  no         -                2  258-265     6531 MiB  82%  no   yes     2 passed in 0.01s
+chunks-B-08    B    fixed                    183  no         -                2  274-283     6531 MiB  82%  no   yes     2 passed in 0.01s
+chunks-B-09    B    edited, tests fail       155  no         retry            1  306-315     6531 MiB  87%  no   yes     1 failed, 1 passed in 0.17s
+chunks-B-10    B    edited, tests fail       184  no         retry            1  326-331     6531 MiB  92%  no   yes     1 failed, 1 passed in 0.17s
+
+Totals
+calc    arm A: fixed 2, edited, tests fail 0, no edit applied 6, never tried to edit 2; median 92 s
+calc    arm B: fixed 10, edited, tests fail 0, no edit applied 0, never tried to edit 0; median 49 s
+chunks  arm A: fixed 1, edited, tests fail 1, no edit applied 7, never tried to edit 1; median 94 s
+chunks  arm B: fixed 6, edited, tests fail 4, no edit applied 0, never tried to edit 0; median 138 s

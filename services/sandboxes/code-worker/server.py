@@ -91,7 +91,7 @@ def read_file(path: str, start_line: int = 1, end_line: int | None = None) -> st
     target = _inside(path)
     if not target.is_file():
         raise ToolError(f"{path} is not a file")
-    lines = target.read_text(encoding="utf-8", errors="replace").splitlines()
+    lines = _lines(target.read_bytes().decode("utf-8", errors="replace"))
     start = max(1, start_line)
     end = min(len(lines), end_line or len(lines), start + MAX_READ_LINES - 1)
     return "\n".join(f"{n:>6}\t{lines[n - 1]}" for n in range(start, end + 1))
@@ -137,31 +137,62 @@ def replace_in_file(path: str, old: str, new: str) -> str:
         text = target.read_bytes().decode("utf-8")
     except UnicodeDecodeError as exc:
         raise ToolError(f"{path} is not UTF-8 text") from exc
-    # Models write "\n"; keep a CRLF file's line endings as they are. `new` is normalized first so a
-    # CRLF the model did send isn't doubled into "\r\r\n".
-    if "\r\n" in text and "\r" not in old:
+    # Match `old` as given first. Models write "\n", so in a file with CRLF line endings an `old`
+    # that spans lines is tried again with CRLF; a file that mixes both still matches its LF lines.
+    if _count(text, old) == 0 and "\n" in old and "\r" not in old and "\r\n" in text:
         old = old.replace("\n", "\r\n")
-        new = new.replace("\r\n", "\n").replace("\n", "\r\n")
-    if old == new:
-        raise ToolError("old and new are the same; nothing to change")
-    # str.count skips overlapping matches ("aa" in "aaa" counts once), so check uniqueness by position.
-    first = text.find(old)
-    count = 0 if first < 0 else 1 if text.find(old, first + 1) < 0 else max(2, text.count(old))
+    count = _count(text, old)
     if count != 1:
         raise ToolError(_replace_miss(path, text, old, count))
+    # The new text takes the line endings of the place it goes: a CRLF the model sent is never
+    # doubled into "\r\r\n", and an LF region of a mixed file stays LF.
+    new = new.replace("\r\n", "\n")
+    if _crlf_at(text, text.find(old), old):
+        new = new.replace("\n", "\r\n")
+    if old == new:
+        raise ToolError("old and new are the same; nothing to change")
     target.write_bytes(text.replace(old, new, 1).encode("utf-8"))
     return _clip(_run(["git", "diff", "--", relative.as_posix()]).stdout) or f"replaced in {path}"
+
+
+def _lines(text: str) -> list[str]:
+    """Split on "\\n" only, dropping one trailing "\\r", as Git and editors count lines.
+
+    str.splitlines() also splits on form feeds, lone CRs, and Unicode line separators, so text
+    shown that way couldn't be copied back into replace_in_file."""
+    lines = [line.removesuffix("\r") for line in text.split("\n")]
+    if lines[-1] == "":
+        lines.pop()
+    return lines
+
+
+def _count(text: str, old: str) -> int:
+    """How many times `old` occurs, counting overlapping matches ("aa" occurs twice in "aaa")."""
+    first = text.find(old)
+    if first < 0:
+        return 0
+    return 1 if text.find(old, first + 1) < 0 else max(2, text.count(old))
+
+
+def _crlf_at(text: str, start: int, old: str) -> bool:
+    """Whether the matched text at `start` uses CRLF line endings."""
+    if "\n" in old:
+        return "\r\n" in old
+    end = text.find("\n", start + len(old))
+    if end < 0:  # the last line, without a newline: follow the rest of the file
+        return "\r\n" in text
+    return text[end - 1] == "\r"
 
 
 def _replace_miss(path: str, text: str, old: str, count: int) -> str:
     """Say why `old` didn't match exactly once. Nothing here loosens the match; it only says what to fix."""
     if count > 1:
         return f"old appears {count} times in {path}; include more surrounding lines so it appears once"
-    old_lines = old.strip("\r\n").splitlines()
+    old_lines = _lines(old.strip("\r\n"))
     if old_lines and all(re.match(r"\s*\d+\t", line) for line in old_lines):
         return "old starts each line with a line number from read_file; remove the numbers and the tab after them"
     wanted = [line.strip() for line in old_lines]
-    have = [line.strip() for line in text.splitlines()]
+    have = [line.strip() for line in _lines(text)]
     for start in range(len(have) - len(wanted) + 1):
         if wanted and have[start : start + len(wanted)] == wanted:
             return (

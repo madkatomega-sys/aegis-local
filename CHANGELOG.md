@@ -14,10 +14,15 @@ All notable changes to this project are recorded here. The format follows
   without loosening the match. It never writes under `.git` or outside the workspace, even
   through a symlink, since Git runs settings and hooks from `.git` on its next command. It is
   mutating and a progress tool in the policy, like
-  `apply_patch`, and the planner can't use it. The builder prompt now prefers it to diffs. With
-  Qwen3-4B, the walkthrough that never finished with diffs now finishes in 3 of 3 runs on
-  OpenCode 1.19.5 and 1 of 3 on 2.3.0
+  `apply_patch`, and the planner can't use it. The builder prompt now prefers it to diffs. In an
+  A/B with Qwen3-4B on OpenCode 1.19.5 (tool and prompt together against `main`, 10 runs per arm),
+  the builder fixed a one-line bug in 10 of 10 runs against 2 of 10, and a two-edit bug in 6 of 10
+  against 1 of 10; there is no A/B on 2.3.0, where the walkthrough finished in 1 of 3
   ([evidence](docs/validation/replace-in-file-2026-11-14-windows11-rtx4070/README.md)).
+- `read_file` and `replace_in_file` split lines the same way: only on `\n`, with a trailing `\r`
+  dropped from what `read_file` shows. Text copied from `read_file` matches in files with CRLF,
+  mixed line endings, form feeds or Unicode line separators, and an LF edit to a CRLF line keeps
+  it CRLF.
 - Evidence for OpenCode 1.19.5 and 2.3.0 on Windows 11 with an RTX 4070, in
   `docs/validation/opencode-2026-11-14-windows11-rtx4070/`: the tools each agent is offered
   before and after the hardening below, probes, and ten coding-loop walkthroughs with their

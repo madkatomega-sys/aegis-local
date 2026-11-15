@@ -1,4 +1,3 @@
-import ast
 import json
 
 import pytest
@@ -45,18 +44,16 @@ def test_always_approval_holds_in_clean_session(policy):
     assert policy.decide("code__reset_workspace", SessionTaint()).action is Action.HOLD
 
 
-def test_every_code_worker_tool_that_writes_is_mutating(policy, repo_root):
-    """The code__* catch-all is read-only, so a new worker tool that writes needs its own rule."""
-    source = (repo_root / "services" / "sandboxes" / "code-worker" / "server.py").read_text(encoding="utf-8")
-    tools = {
-        node.name
-        for node in ast.walk(ast.parse(source))
-        if isinstance(node, ast.FunctionDef)
-        and any(isinstance(d, ast.Call) and getattr(d.func, "attr", "") == "tool" for d in node.decorator_list)
-    }
-    readers = {"list_files", "read_file", "diff"}
-    assert readers < tools
-    assert all(policy.rule_for(f"code__{tool}").mutating for tool in tools - readers)
+CODE_READERS = {"list_files", "read_file", "diff"}
+
+
+def test_every_code_worker_tool_that_writes_is_mutating(policy, code_worker_tools):
+    """The code__* catch-all is read-only, so a new worker tool that writes needs its own rule.
+
+    The tools come from the worker's MCP registry, so a tool is checked however it's registered."""
+    assert CODE_READERS.issubset(code_worker_tools)
+    not_mutating = {tool for tool in code_worker_tools - CODE_READERS if not policy.rule_for(f"code__{tool}").mutating}
+    assert not_mutating == set()
 
 
 def test_first_matching_rule_wins(policy):
