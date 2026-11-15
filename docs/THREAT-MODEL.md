@@ -31,13 +31,14 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
 |---|---|---|
 | Malformed or invented tool calls | Grammar/JSON-schema constrained decoding; strict argument validation | `llama-server`, router, guard |
 | Prompt injection leading to an action | Session taint high-water mark; quarantine through the Tier 0 extractor; approvals for mutating tools in tainted sessions | Guard |
-| Infinite loops and retry spirals | Canonical call hashing, oscillation detection, near-duplicate failure streaks, a failure-streak limit that patches don't reset, hard budgets | Guard |
+| Infinite loops and retry spirals | Canonical call hashing, oscillation detection, near-duplicate failure streaks, a failure-streak limit that workspace edits don't reset, hard budgets | Guard |
 | Destructive commands | Allowlisted commands, no shell, read-only root, `tmpfs` scratch, dropped capabilities, resource limits | Sandbox workers |
 | Data exfiltration from sandboxes | Internal-only network with no route out | Compose networks |
 | Host file damage | Repo copied into a volume; changes leave only as an exported diff the user applies | `aegis.py workspace` |
+| A workspace edit turning into code execution through Git | Neither edit tool writes under `.git`, where Git reads `core.fsmonitor`, hooks, and similar settings on its next command (including the read-only tools and `workspace export`, which need no approval). `replace_in_file` refuses `.git` and anything outside the workspace after resolving symlinks; `apply_patch` relies on `git apply`, which rejects `.git` paths | `code-worker` |
 | LAN exposure | All ports bound to `127.0.0.1` (or the container bridge on Linux) | Compose, `aegis.py` |
 | Wrong math or physics | Numeric and symbolic answers come from SymPy, pint, SciPy | `math-physics-mcp` |
-| Wrong code | Patches judged by exit codes of tests, type checks, linters | `code-worker` |
+| Wrong code | Changes judged by exit codes of tests, type checks, linters | `code-worker` |
 | Invented citations | Quotes checked byte for byte against hashed source chunks | `writing-auditor` |
 | Bypass through the IDE | Enforcement never depends on OpenCode, its plugins, or agent prompts; OpenCode's host-side edit, shell, and web tools are disabled | Design rule, `config/opencode.json` |
 | Sandboxed code calling the guard | `/mcp` requires a client token and `/admin` a separate admin token; sandboxes hold neither | Guard, `aegis.py` |
@@ -57,6 +58,10 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
   injection and breaker checks, it confirms from inside each sandbox that the internet, the
   router, other sandboxes, and the container's own root filesystem are all unreachable or
   read-only.
+- `tests/test_code_worker.py` checks the edit tools against a throwaway Git repository,
+  including that `replace_in_file` won't write into `.git`, outside the workspace, or through a
+  symlink to either. `tests/test_policy.py` fails if any code-worker tool other than the readers
+  isn't marked mutating, since the `code__*` catch-all rule is read-only.
 
 ## Known limitations
 
@@ -76,9 +81,13 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
   the user profile's permissions on Windows). Anyone who can read your home directory can call
   the guard.
 - **A change to the workspace restarts the loop checks.** After a successful `progress` call
-  (a new patch), the guard no longer counts earlier results against identical calls, so the
-  agent can rerun the tests. An agent that keeps producing new patches is stopped by the failure
-  streak (five failed runs in a row) or the session budget, not by the repeat rules.
+  (a new patch or edit), the guard no longer counts earlier results against identical calls, so
+  the agent can rerun the tests. An agent that keeps producing new changes is stopped by the
+  failure streak (five failed runs in a row) or the session budget, not by the repeat rules.
+- **Every tool that changes the workspace needs its own policy rule.** The `code__*` catch-all
+  in `config/policy.yaml` is read-only, so a new code-worker tool that writes is approval-free
+  until it gets a `mutating` rule ahead of the catch-all. `tests/test_policy.py` checks this for
+  the tools the worker registers today.
 - **The code worker trusts its workspace by default.** Set the `code` server to `untrusted` in
   `config/mcp-servers.yaml` when you load a repository you didn't write, so its file contents
   and test output taint the session.

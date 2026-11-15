@@ -8,6 +8,26 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- `code__replace_in_file(path, old, new)`: replaces one exact piece of text in an existing
+  workspace file. `old` must appear exactly once; when it doesn't, the error says why (more than
+  one match, or a match that differs only in indentation) without loosening the match. If `old`
+  still has `read_file`'s line numbers, as models that call tools from code (OpenCode's code mode)
+  send it, the numbers say which lines to replace, and the text after them must be exactly those
+  lines. A line that only looks numbered, such as TSV data, is matched as text. It refuses files
+  over 2 MB, files that aren't UTF-8, and a `new` with half of a surrogate pair. It never writes
+  under `.git` or outside the workspace, even through a symlink, since Git runs settings and hooks
+  from `.git` on its next command. It is mutating and a progress tool in the policy, like
+  `apply_patch`, and the planner can't use it. The builder prompt now prefers it to diffs. In an
+  A/B with Qwen3-4B on OpenCode 1.19.5, 10 runs per arm: with the same neutral prompt, turning
+  the tool on took the builder from 1 to 9 of 10 on a one-line bug, and from 0 to 3 of 10 on a
+  two-edit bug; the new prompt and the tool together against `main` were 10 against 2, and 6
+  against 1. On 2.3.0 the builder fixed the one-line bug in 6 of 10 runs, the same before and
+  after the line-number handling
+  ([evidence](docs/validation/replace-in-file-2026-11-14-windows11-rtx4070/README.md)).
+- `read_file` and `replace_in_file` split lines the same way: only on `\n`, with a trailing `\r`
+  dropped from what `read_file` shows. Text copied from `read_file` matches in files with CRLF,
+  mixed line endings, form feeds or Unicode line separators, and an LF edit to a CRLF line keeps
+  it CRLF.
 - Evidence for OpenCode 1.19.5 and 2.3.0 on Windows 11 with an RTX 4070, in
   `docs/validation/opencode-2026-11-14-windows11-rtx4070/`: the tools each agent is offered
   before and after the hardening below, probes, and ten coding-loop walkthroughs with their

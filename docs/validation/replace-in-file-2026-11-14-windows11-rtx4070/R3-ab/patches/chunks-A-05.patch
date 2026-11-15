@@ -1,0 +1,17 @@
+diff --git a/chunks.py b/chunks.py
+index f351c00..3ab877d 100644
+--- a/chunks.py
++++ b/chunks.py
+@@ -1,10 +1,6 @@
+ def chunks(items, size):
+     """Split items into consecutive lists of `size` items; the last list may be shorter."""
+     result = []
+-    current = []
+-    for item in items:
+-        current.append(item)
+-        if len(current) > size:
+-            result.append(current)
+-            current = []
++    for i in range(0, len(items), size):
++        result.append(items[i:i+size])
+     return result

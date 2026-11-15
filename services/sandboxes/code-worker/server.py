@@ -1,7 +1,7 @@
 """Code worker: a sandboxed Git worktree with allowlisted checks.
 
 The user's repository is copied into a volume (`aegis workspace load`); this worker reads it,
-applies unified diffs to it, and runs allowlisted checks. Nothing here can touch the host
+edits it (unified diffs, or exact find-and-replace), and runs allowlisted checks. Nothing here can touch the host
 checkout. Changes leave only as a diff the user exports and applies.
 
 Commands never go through a shell. Each check is a fixed argument list, optionally followed by
@@ -11,6 +11,7 @@ one path inside the workspace.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -23,6 +24,7 @@ WORKSPACE = Path(os.environ.get("AEGIS_WORKSPACE", "/workspace/repo"))
 TIMEOUT = int(os.environ.get("AEGIS_CHECK_TIMEOUT", "300"))
 MAX_OUTPUT = 20_000
 MAX_READ_LINES = 800
+MAX_EDIT_BYTES = 2_000_000
 
 CHECKS: dict[str, list[str]] = {
     "pytest": ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"],
@@ -38,9 +40,13 @@ def _git_env() -> dict[str, str]:
     return {**os.environ, "GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "safe.directory", "GIT_CONFIG_VALUE_0": "*"}
 
 
-def _run(args: list[str], *, stdin: str | None = None, timeout: int = TIMEOUT) -> subprocess.CompletedProcess[str]:
+def _require_workspace() -> None:
     if not (WORKSPACE / ".git").exists():
         raise ToolError("workspace is empty; ask the user to run `python aegis.py workspace load <path>`")
+
+
+def _run(args: list[str], *, stdin: str | None = None, timeout: int = TIMEOUT) -> subprocess.CompletedProcess[str]:
+    _require_workspace()
     try:
         return subprocess.run(
             args,
@@ -85,7 +91,7 @@ def read_file(path: str, start_line: int = 1, end_line: int | None = None) -> st
     target = _inside(path)
     if not target.is_file():
         raise ToolError(f"{path} is not a file")
-    lines = target.read_text(encoding="utf-8", errors="replace").splitlines()
+    lines = _lines(target.read_bytes().decode("utf-8", errors="replace"))
     start = max(1, start_line)
     end = min(len(lines), end_line or len(lines), start + MAX_READ_LINES - 1)
     return "\n".join(f"{n:>6}\t{lines[n - 1]}" for n in range(start, end + 1))
@@ -107,6 +113,175 @@ def apply_patch(diff: str) -> str:
     if applied.returncode != 0:
         raise ToolError("patch failed:\n" + _clip(applied.stderr))
     return _clip(_run(["git", "diff", "--stat"]).stdout) or "applied"
+
+
+@mcp.tool()
+def replace_in_file(path: str, old: str, new: str) -> str:
+    """Replace one exact piece of text in an existing workspace file.
+
+    `old` must appear in the file exactly once: copy it from read_file without the line numbers,
+    with enough surrounding lines to be unique. If `old` still has read_file's line numbers, they
+    say which lines to replace, and those lines must match exactly. Use apply_patch to create or
+    delete files."""
+    _require_workspace()
+    target = _inside(path)
+    relative = target.relative_to(WORKSPACE.resolve())
+    # Git configuration and hooks run code on the next git command, so they are never editable.
+    if ".git" in relative.parts:
+        raise ToolError("files inside .git can't be edited")
+    if not target.is_file():
+        raise ToolError(f"{path} is not a file; use apply_patch to create files")
+    if target.stat().st_size > MAX_EDIT_BYTES:
+        raise ToolError(f"{path} is larger than {MAX_EDIT_BYTES} bytes")
+    if not old:
+        raise ToolError("old is empty; give the exact text to replace")
+    try:
+        text = target.read_bytes().decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ToolError(f"{path} is not UTF-8 text") from exc
+    # Match `old` as given first. Models write "\n", so in a file with CRLF line endings an `old`
+    # that spans lines is tried again with CRLF; a file that mixes both still matches its LF lines.
+    if _count(text, old) == 0 and "\n" in old and "\r" not in old and "\r\n" in text:
+        old = old.replace("\n", "\r\n")
+    count = _count(text, old)
+    at, note = text.find(old), ""
+    # Models that call tools from code (OpenCode's code mode) build `old` from read_file's result,
+    # line numbers included. Those numbers are our own format and name the lines exactly, so they
+    # are used only when the text after them is exactly what is on those lines.
+    if count == 0 and (span := _numbered_span(text, old)) is not None:
+        at, end, first, last = span
+        old, count = text[at:end], 1
+        new = _without_numbers(new, first)
+        note = f"\n(old had read_file's line numbers; replaced lines {first} to {last})"
+    if count != 1:
+        raise ToolError(_replace_miss(path, text, old, count))
+    try:
+        new.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise ToolError(
+            f"new has a character that can't be written as UTF-8 at position {exc.start} "
+            f"({new[exc.start]!r}, half of a surrogate pair); send that character itself"
+        ) from exc
+    # The new text takes the line endings of the place it goes: a CRLF the model sent is never
+    # doubled into "\r\r\n", and an LF region of a mixed file stays LF.
+    new = new.replace("\r\n", "\n")
+    if _crlf_at(text, at, old):
+        new = new.replace("\n", "\r\n")
+    if old == new:
+        raise ToolError("old and new are the same; nothing to change")
+    target.write_bytes((text[:at] + new + text[at + len(old) :]).encode("utf-8"))
+    return _clip((_run(["git", "diff", "--", relative.as_posix()]).stdout or f"replaced in {path}") + note)
+
+
+def _lines(text: str) -> list[str]:
+    """Split on "\\n" only, dropping one trailing "\\r", as Git and editors count lines.
+
+    str.splitlines() also splits on form feeds, lone CRs, and Unicode line separators, so text
+    shown that way couldn't be copied back into replace_in_file."""
+    lines = [line.removesuffix("\r") for line in text.split("\n")]
+    if lines[-1] == "":
+        lines.pop()
+    return lines
+
+
+def _count(text: str, old: str) -> int:
+    """How many times `old` occurs, counting overlapping matches ("aa" occurs twice in "aaa")."""
+    first = text.find(old)
+    if first < 0:
+        return 0
+    return 1 if text.find(old, first + 1) < 0 else max(2, text.count(old))
+
+
+def _crlf_at(text: str, start: int, old: str) -> bool:
+    """Whether the matched text at `start` uses CRLF line endings."""
+    if "\n" in old:
+        return "\r\n" in old
+    end = text.find("\n", start + len(old))
+    if end < 0:  # the last line, without a newline: follow the rest of the file
+        return "\r\n" in text
+    return text[end - 1] == "\r"
+
+
+# read_file writes f"{n:>6}\t" before each line. Code that trims lines leaves "3\t", or just "3" for
+# an empty line, so the padding and an empty line's tab are optional; the numbers must still count
+# up by one, and at least one line must have the tab.
+_NUMBER = re.compile(r" *(\d+)(?:\t(.*))?", re.DOTALL)
+
+
+def _numbered(text: str) -> tuple[int, list[str]] | None:
+    """If every line of `text` starts with read_file's line number, the first number and the lines without them."""
+    parsed = [_NUMBER.fullmatch(line) for line in _lines(text.strip("\r\n"))]
+    matches = [match for match in parsed if match]
+    if not parsed or len(matches) != len(parsed) or all(match.group(2) is None for match in matches):
+        return None
+    numbers = [int(match.group(1)) for match in matches]
+    if numbers != list(range(numbers[0], numbers[0] + len(numbers))):
+        return None
+    return numbers[0], [match.group(2) or "" for match in matches]
+
+
+def _numbered_span(text: str, old: str) -> tuple[int, int, int, int] | None:
+    """Where the lines that numbered `old` names are, if their text is exactly what `old` has after the numbers.
+
+    Returns the start and end offsets in `text` (end excludes the last line's ending) and the first
+    and last line numbers."""
+    numbered = _numbered(old)
+    if numbered is None:
+        return None
+    first, wanted = numbered
+    last = first + len(wanted) - 1
+    lines = _lines(text)
+    if first < 1 or last > len(lines) or lines[first - 1 : last] != wanted:
+        return None
+    starts = [0, *(match.end() for match in re.finditer("\n", text))]
+    end = starts[last - 1] + len(lines[last - 1])
+    if old.endswith("\n") and last < len(starts):  # `old` included the last line's ending
+        end = starts[last]
+    return starts[first - 1], end, first, last
+
+
+def _without_numbers(new: str, first: int) -> str:
+    """`new` without line numbers, if the model copied them into it too, counting up from `first`."""
+    numbered = _numbered(new)
+    if numbered is None:
+        return new
+    start, lines = numbered
+    if start != first:
+        raise ToolError(f"new starts its lines with line numbers; send new without them (old starts at line {first})")
+    return "\n".join(lines) + ("\n" if new.endswith("\n") else "")
+
+
+def _replace_miss(path: str, text: str, old: str, count: int) -> str:
+    """Say why `old` didn't match exactly once. Nothing here loosens the match; it only says what to fix."""
+    if count > 1:
+        return f"old appears {count} times in {path}; include more surrounding lines so it appears once"
+    have = _lines(text)
+    numbered = _numbered(old)
+    if numbered is not None:
+        # Only when the text after the numbers is in the file: a TSV line like "1\talpha" is data.
+        first, wanted = numbered
+        found = _find_lines(have, wanted)
+        if found:
+            return (
+                f"old has read_file's line numbers from {first}, but that text is at line {found} of {path}; "
+                "read the file again and copy the lines with their current numbers, or without numbers"
+            )
+    for candidate in [_lines(old.strip("\r\n"))] + ([numbered[1]] if numbered else []):
+        found = _find_lines([line.strip() for line in have], [line.strip() for line in candidate])
+        if found:
+            return (
+                f"old is not in {path} exactly, but lines {found} to {found + len(candidate) - 1} match it "
+                "apart from indentation or trailing spaces; read those lines again and copy them exactly"
+            )
+    return f"old is not in {path}; read the file again and copy the text exactly"
+
+
+def _find_lines(have: list[str], wanted: list[str]) -> int | None:
+    """The 1-based line where `wanted` starts in `have`, if it does."""
+    for start in range(len(have) - len(wanted) + 1):
+        if wanted and have[start : start + len(wanted)] == wanted:
+            return start + 1
+    return None
 
 
 @mcp.tool()

@@ -44,7 +44,12 @@ tools:
   # Code worker.
   # progress: a successful call changes what later calls see, so the circuit breaker stops
   # counting earlier results against them (run the tests, fix, run the same tests again).
+  # Every tool that changes the workspace needs its own rule here: the code__* catch-all below
+  # is read-only.
   - match: "code__apply_patch"
+    mutating: true
+    progress: true
+  - match: "code__replace_in_file"
     mutating: true
     progress: true
   - match: "code__reset_workspace"
