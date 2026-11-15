@@ -215,7 +215,7 @@ Each stage closes one failure mode. Stages are listed in dependency order.
   dropped capabilities, `no-new-privileges`, CPU/memory/PID limits, and **no route to the
   internet**.
   - `code-worker`: a Git worktree in a named volume; `pytest`, `ruff`, `pyright`, and other
-    allowlisted commands; patch apply and diff.
+    allowlisted commands; edits as unified diffs or as exact find-and-replace; diff.
   - `math-physics-mcp`: SymPy for exact algebra, calculus, and ODEs; pint for dimensional checks;
     SciPy for numerics.
   - `writing-auditor`: indexes a read-only notes vault into SQLite FTS5 (BM25), hashes every chunk,

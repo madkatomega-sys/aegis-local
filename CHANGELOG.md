@@ -11,7 +11,9 @@ All notable changes to this project are recorded here. The format follows
 - `code__replace_in_file(path, old, new)`: replaces one exact piece of text in an existing
   workspace file. `old` must appear exactly once; when it doesn't, the error says why (more than
   one match, line numbers copied from `read_file`, or a match that differs only in indentation)
-  without loosening the match. It is mutating and a progress tool in the policy, like
+  without loosening the match. It never writes under `.git` or outside the workspace, even
+  through a symlink, since Git runs settings and hooks from `.git` on its next command. It is
+  mutating and a progress tool in the policy, like
   `apply_patch`, and the planner can't use it. The builder prompt now prefers it to diffs. With
   Qwen3-4B, the walkthrough that never finished with diffs now finishes in 3 of 3 runs on
   OpenCode 1.19.5 and 1 of 3 on 2.3.0

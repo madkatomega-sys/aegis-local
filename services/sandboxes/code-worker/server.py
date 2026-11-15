@@ -133,16 +133,20 @@ def replace_in_file(path: str, old: str, new: str) -> str:
         raise ToolError(f"{path} is larger than {MAX_EDIT_BYTES} bytes")
     if not old:
         raise ToolError("old is empty; give the exact text to replace")
-    if old == new:
-        raise ToolError("old and new are the same; nothing to change")
     try:
         text = target.read_bytes().decode("utf-8")
     except UnicodeDecodeError as exc:
         raise ToolError(f"{path} is not UTF-8 text") from exc
-    # Models write "\n"; keep a CRLF file's line endings as they are.
+    # Models write "\n"; keep a CRLF file's line endings as they are. `new` is normalized first so a
+    # CRLF the model did send isn't doubled into "\r\r\n".
     if "\r\n" in text and "\r" not in old:
-        old, new = old.replace("\n", "\r\n"), new.replace("\n", "\r\n")
-    count = text.count(old)
+        old = old.replace("\n", "\r\n")
+        new = new.replace("\r\n", "\n").replace("\n", "\r\n")
+    if old == new:
+        raise ToolError("old and new are the same; nothing to change")
+    # str.count skips overlapping matches ("aa" in "aaa" counts once), so check uniqueness by position.
+    first = text.find(old)
+    count = 0 if first < 0 else 1 if text.find(old, first + 1) < 0 else max(2, text.count(old))
     if count != 1:
         raise ToolError(_replace_miss(path, text, old, count))
     target.write_bytes(text.replace(old, new, 1).encode("utf-8"))
