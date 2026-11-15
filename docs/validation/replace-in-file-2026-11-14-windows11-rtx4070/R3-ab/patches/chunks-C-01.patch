@@ -1,0 +1,12 @@
+diff --git a/chunk_processor.py b/chunk_processor.py
+new file mode 100644
+index 0000000..bd7d4fd
+--- /dev/null
++++ b/chunk_processor.py
+@@ -0,0 +1,6 @@
++def chunks(lst, n):
++    result = []
++    for i in range(0, len(lst), n):
++        result.append(lst[i:i+n])
++    return result
++

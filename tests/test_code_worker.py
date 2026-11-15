@@ -84,11 +84,93 @@ def test_replace_in_file_rejects_an_ambiguous_match(worker):
     assert BUGGY.encode() in calc(worker)
 
 
-def test_replace_in_file_names_line_numbers_copied_from_read_file(worker):
-    copied = worker.read_file("calc.py", 2, 2)
-    with pytest.raises(ToolError, match="line number"):
-        worker.replace_in_file("calc.py", copied, FIXED)
+# OpenCode 2.3.0 calls tools from JavaScript, and a 4B model builds `old` from read_file's result:
+# the numbered line as shown, or trimmed, or after a regex like /^\d+\t/ that misses the padding.
+@pytest.mark.parametrize("prefix", ["     2\t", "2\t"], ids=["as shown", "trimmed"])
+def test_replace_in_file_uses_line_numbers_copied_from_read_file(worker, prefix):
+    assert worker.read_file("calc.py", 2, 2) == f"     2\t{BUGGY}"
+    result = worker.replace_in_file("calc.py", f"{prefix}{BUGGY}", FIXED)
+    assert calc(worker) == f"def mean(values):\n{FIXED}\n".encode()
+    assert "replaced lines 2 to 2" in result
+
+
+def test_replace_in_file_line_numbers_say_which_copy_to_replace(worker):
+    """Without numbers a repeated line is ambiguous; read_file's numbers name the one to change."""
+    (worker.WORKSPACE / "calc.py").write_bytes(f"x = 1\n{BUGGY}\ny = 2\n{BUGGY}\n".encode())
+    worker.replace_in_file("calc.py", f"     4\t{BUGGY}", FIXED)
+    assert calc(worker) == f"x = 1\n{BUGGY}\ny = 2\n{FIXED}\n".encode()
+
+
+@pytest.mark.parametrize(
+    "old, message",
+    [(f"     1\t{BUGGY}", "that text is at line 2"), ("     2\t    return 0", "read the file again")],
+    ids=["wrong line", "different text"],
+)
+def test_replace_in_file_numbered_lines_must_match_exactly(worker, old, message):
+    """Numbers that name the wrong line, or text that differs, change nothing."""
+    with pytest.raises(ToolError, match=message):
+        worker.replace_in_file("calc.py", old, FIXED)
     assert BUGGY.encode() in calc(worker)
+
+
+def test_replace_in_file_numbered_block_in_a_crlf_file(worker):
+    """Several numbered lines, an empty one trimmed to its number, CRLF endings, and numbers copied into new."""
+    (worker.WORKSPACE / "calc.py").write_bytes(b"a = 1\r\n\r\nb = 2\r\nc = 3\r\n")
+    old = "     1\ta = 1\n2\n     3\tb = 2\n"
+    worker.replace_in_file("calc.py", old, "     1\ta = 10\n     2\tb = 20\n")
+    assert calc(worker) == b"a = 10\r\nb = 20\r\nc = 3\r\n"
+
+
+def test_replace_in_file_refuses_numbers_in_new_that_start_elsewhere(worker):
+    with pytest.raises(ToolError, match="send new without them"):
+        worker.replace_in_file("calc.py", f"     2\t{BUGGY}", f"     7\t{FIXED}")
+    assert BUGGY.encode() in calc(worker)
+
+
+TSV = b"1\talpha\n2\tbeta\n"
+
+
+def test_replace_in_file_treats_tsv_lines_as_text(worker):
+    """Data lines that start with a number and a tab are matched as they are, and a miss gets no line-number hint."""
+    (worker.WORKSPACE / "calc.py").write_bytes(TSV)
+    with pytest.raises(ToolError) as miss:
+        worker.replace_in_file("calc.py", "1\talpah", "1\tgamma")
+    assert "line number" not in str(miss.value)
+    assert "read the file again" in str(miss.value)
+    assert calc(worker) == TSV
+    worker.replace_in_file("calc.py", "2\tbeta", "2\tdelta")
+    assert calc(worker) == b"1\talpha\n2\tdelta\n"
+
+
+def test_replace_in_file_never_reads_a_bare_number_as_a_line_number(worker):
+    """`old` = "2" is text to find, not "line 2", even when line 2 is empty."""
+    (worker.WORKSPACE / "calc.py").write_bytes(b"x = 1\n\ny = 3\n")
+    with pytest.raises(ToolError, match="read the file again"):
+        worker.replace_in_file("calc.py", "2", "z = 2")
+    assert calc(worker) == b"x = 1\n\ny = 3\n"
+
+
+def test_replace_in_file_refuses_a_lone_surrogate_in_new(worker):
+    """JSON can carry half of a surrogate pair ("\\ud83d"); it can't be written as UTF-8."""
+    with pytest.raises(ToolError, match="surrogate pair"):
+        worker.replace_in_file("calc.py", BUGGY, f"{FIXED}  # \ud83d")
+    assert BUGGY.encode() in calc(worker)
+
+
+def test_replace_in_file_refuses_files_over_the_size_limit(worker, monkeypatch):
+    monkeypatch.setattr(worker, "MAX_EDIT_BYTES", 10)
+    with pytest.raises(ToolError, match="larger than 10 bytes"):
+        worker.replace_in_file("calc.py", BUGGY, FIXED)
+    assert BUGGY.encode() in calc(worker)
+
+
+def test_replace_in_file_refuses_files_that_are_not_utf8(worker):
+    """read_file shows such a file with replacement characters; writing that back would corrupt it."""
+    content = f"{BUGGY}  # caf\xe9\n".encode("latin-1")
+    (worker.WORKSPACE / "calc.py").write_bytes(content)
+    with pytest.raises(ToolError, match="not UTF-8"):
+        worker.replace_in_file("calc.py", BUGGY, FIXED)
+    assert calc(worker) == content
 
 
 def test_replace_in_file_points_at_lines_with_different_indentation(worker):
