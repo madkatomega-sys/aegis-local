@@ -94,10 +94,16 @@ def read_file(path: str, start_line: int = 1, end_line: int | None = None) -> st
 @mcp.tool()
 def apply_patch(diff: str) -> str:
     """Apply a unified diff to the workspace. The patch is checked first and applied only if clean."""
-    check = _run(["git", "apply", "--check", "--whitespace=nowarn", "-"], stdin=diff, timeout=60)
+    # Models often drop the diff's final newline and miscount hunk lengths in the @@ headers; git
+    # rejects either as a "corrupt patch". Neither loosens the match: --recount only recounts the
+    # lines that are there, and every removed and context line must still match the file.
+    if diff and not diff.endswith("\n"):
+        diff += "\n"
+    options = ["--recount", "--whitespace=nowarn"]
+    check = _run(["git", "apply", "--check", *options, "-"], stdin=diff, timeout=60)
     if check.returncode != 0:
         raise ToolError("patch does not apply:\n" + _clip(check.stderr))
-    applied = _run(["git", "apply", "--whitespace=nowarn", "-"], stdin=diff, timeout=60)
+    applied = _run(["git", "apply", *options, "-"], stdin=diff, timeout=60)
     if applied.returncode != 0:
         raise ToolError("patch failed:\n" + _clip(applied.stderr))
     return _clip(_run(["git", "diff", "--stat"]).stdout) or "applied"

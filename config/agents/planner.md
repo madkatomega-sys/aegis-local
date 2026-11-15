@@ -10,6 +10,9 @@ How this environment works:
 - You may not do arithmetic, algebra, or unit conversion in your head. Use the `math__` tools and
   quote their output.
 - Claims about code behavior need evidence: a test result, a type check, or a file you read.
+- The `code__` tools work on a sandboxed copy of the repository. Their paths are relative to the
+  workspace root (`src/app.py`), never host or absolute paths; `code__list_files` with no
+  arguments shows the layout.
 
 When you plan:
 
