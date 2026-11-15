@@ -8,6 +8,14 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- `code__replace_in_file(path, old, new)`: replaces one exact piece of text in an existing
+  workspace file. `old` must appear exactly once; when it doesn't, the error says why (more than
+  one match, line numbers copied from `read_file`, or a match that differs only in indentation)
+  without loosening the match. It is mutating and a progress tool in the policy, like
+  `apply_patch`, and the planner can't use it. The builder prompt now prefers it to diffs. With
+  Qwen3-4B, the walkthrough that never finished with diffs now finishes in 3 of 3 runs on
+  OpenCode 1.19.5 and 1 of 3 on 2.3.0
+  ([evidence](docs/validation/replace-in-file-2026-11-14-windows11-rtx4070/README.md)).
 - Evidence for OpenCode 1.19.5 and 2.3.0 on Windows 11 with an RTX 4070, in
   `docs/validation/opencode-2026-11-14-windows11-rtx4070/`: the tools each agent is offered
   before and after the hardening below, probes, and ten coding-loop walkthroughs with their

@@ -1,0 +1,34 @@
+Every event in the guard's audit ledger (/data/ledger.sqlite) for these runs, in UTC: events 59 to 88.
+Events 1 to 58 are the earlier OpenCode validation (../opencode-2026-11-14-windows11-rtx4070/).
+Columns: id, time, session (first 8 characters), tool, decision, rule, ok, tainted, reason.
+
+59  2026-11-15T03:10:13Z  f3aaa90e  code__list_files  allow  code__*  1  0
+60  2026-11-15T03:10:19Z  f3aaa90e  code__read_file  allow  code__*  1  0
+61  2026-11-15T03:10:24Z  f3aaa90e  code__read_file  allow  code__*  1  0
+62  2026-11-15T03:10:28Z  f3aaa90e  code__replace_in_file  allow  code__replace_in_file  1  0
+63  2026-11-15T03:10:32Z  f3aaa90e  code__run_check  allow  code__run_check  1  0
+64  2026-11-15T03:10:55Z  d1bf11f1  code__list_files  allow  code__*  1  0
+65  2026-11-15T03:11:02Z  d1bf11f1  code__read_file  allow  code__*  1  0
+66  2026-11-15T03:11:06Z  d1bf11f1  code__read_file  allow  code__*  1  0
+67  2026-11-15T03:12:00Z  d1bf11f1  code__replace_in_file  allow  code__replace_in_file  1  0
+68  2026-11-15T03:12:04Z  d1bf11f1  code__run_check  allow  code__run_check  1  0
+69  2026-11-15T03:12:44Z  f190fc9f  code__list_files  allow  code__*  1  0
+70  2026-11-15T03:12:51Z  f190fc9f  code__run_check  allow  code__run_check  0  0
+71  2026-11-15T03:13:01Z  f190fc9f  code__read_file  allow  code__*  1  0
+72  2026-11-15T03:13:06Z  f190fc9f  code__replace_in_file  allow  code__replace_in_file  1  0
+73  2026-11-15T03:13:11Z  f190fc9f  code__run_check  allow  code__run_check  1  0
+74  2026-11-15T03:13:34Z  10639319  code__list_files  allow  code__*  1  0
+75  2026-11-15T03:13:38Z  10639319  code__read_file  allow  code__*  1  0
+76  2026-11-15T03:13:42Z  10639319  code__read_file  allow  code__*  1  0
+77  2026-11-15T03:13:50Z  10639319  code__read_file  allow  code__*  1  0
+78  2026-11-15T03:13:50Z  10639319  code__replace_in_file  allow  code__replace_in_file  0  0
+79  2026-11-15T03:13:57Z  10639319  code__read_file  allow  code__*  1  0
+80  2026-11-15T03:13:57Z  10639319  code__replace_in_file  trip  retry  -  0  code__replace_in_file was already called with identical arguments and failed
+81  2026-11-15T03:14:29Z  7283ec51  code__run_check  allow  code__run_check  0  0
+82  2026-11-15T03:14:45Z  7283ec51  code__read_file  allow  code__*  1  0
+83  2026-11-15T03:14:50Z  7283ec51  code__replace_in_file  allow  code__replace_in_file  1  0
+84  2026-11-15T03:14:55Z  7283ec51  code__run_check  allow  code__run_check  1  0
+85  2026-11-15T03:15:13Z  695619c2  code__list_files  allow  code__*  1  0
+86  2026-11-15T03:15:20Z  695619c2  code__run_check  allow  code__run_check  0  0
+87  2026-11-15T03:15:45Z  695619c2  code__replace_in_file  allow  code__replace_in_file  0  0
+88  2026-11-15T03:15:59Z  695619c2  code__replace_in_file  trip  retry  -  0  code__replace_in_file was already called with identical arguments and failed

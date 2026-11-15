@@ -5,7 +5,8 @@ Sandboxed MCP worker that holds a copy of the user's repository in the `aegis-wo
 | Tool | What it does |
 |---|---|
 | `list_files`, `read_file`, `diff` | Read the workspace |
-| `apply_patch` | Apply a unified diff with `git apply --recount`, only if `--check` passes; a missing final newline is added |
+| `replace_in_file` | Replace one exact piece of text in an existing file; the text must appear exactly once. Small models get this right more often than a diff. Files under `.git` can't be edited |
+| `apply_patch` | Apply a unified diff with `git apply --recount`, only if `--check` passes; a missing final newline is added. For creating or deleting files and multi-file changes |
 | `run_check` | Run `pytest`, `ruff`, `mypy`, or `compileall`; a non-zero exit is a failure |
 | `reset_workspace` | Return to the loaded commit (always needs approval) |
 

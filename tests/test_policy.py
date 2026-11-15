@@ -1,3 +1,4 @@
+import ast
 import json
 
 import pytest
@@ -44,10 +45,25 @@ def test_always_approval_holds_in_clean_session(policy):
     assert policy.decide("code__reset_workspace", SessionTaint()).action is Action.HOLD
 
 
+def test_every_code_worker_tool_that_writes_is_mutating(policy, repo_root):
+    """The code__* catch-all is read-only, so a new worker tool that writes needs its own rule."""
+    source = (repo_root / "services" / "sandboxes" / "code-worker" / "server.py").read_text(encoding="utf-8")
+    tools = {
+        node.name
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.FunctionDef)
+        and any(isinstance(d, ast.Call) and getattr(d.func, "attr", "") == "tool" for d in node.decorator_list)
+    }
+    readers = {"list_files", "read_file", "diff"}
+    assert readers < tools
+    assert all(policy.rule_for(f"code__{tool}").mutating for tool in tools - readers)
+
+
 def test_first_matching_rule_wins(policy):
-    # code__apply_patch is matched before the code__* catch-all.
-    assert policy.rule_for("code__apply_patch").mutating
-    assert policy.rule_for("code__apply_patch").progress
+    # code__apply_patch and code__replace_in_file are matched before the code__* catch-all.
+    for tool in ("code__apply_patch", "code__replace_in_file"):
+        assert policy.rule_for(tool).mutating
+        assert policy.rule_for(tool).progress
     assert not policy.rule_for("code__run_check").progress  # running code doesn't change the source
     assert not policy.rule_for("code__read_file").mutating
 

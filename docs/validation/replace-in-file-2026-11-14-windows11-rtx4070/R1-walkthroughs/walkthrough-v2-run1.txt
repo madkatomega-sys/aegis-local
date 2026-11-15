@@ -1,0 +1,59 @@
+=== OpenCode opencode v2.3.0 coding-loop walkthrough, 2026-11-14T22:10:39
+
+=== 1. Fresh sandbox copy of the sample project
+
+=== 2. Builder agent fixes the failing test (real OpenCode session, live model)
+prompt: The tests in the sandbox workspace fail. Find the bug, fix it, and show me that the tests pass.
+
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__list_files()"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__read_file({\"path\": \"tests/test_calc.py\"})"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__read_file({\"path\": \"calc.py\"})"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__replace_in_file({\"path\": \"calc.py\", \"old\": \"return sum(values) / (len(values) + 1)\"}, \"new\": \"return sum(values) / len(values)\")"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__replace_in_file({\"path\": \"calc.py\", \"old\": \"return sum(values) / (len(values) + 1)\", \"new\": \"return sum(values) / len(values)\")"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__replace_in_file({\"path\": \"calc.py\", \"old\": \"return sum(values) / (len(values) + 1)\", \"new\": \"return sum(values) / len(values)\")"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__replace_in_file({\"path\": \"calc.py\", \"old\": \"return sum(values) / (len(values) + 1)\", \"new\": \"return sum(values) / len(values)\")"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__replace_in_file('{\n  \"path\": \"calc.py\",\n  \"old\": \"return sum(values) / (len(values) + 1)\",\n  \"new\": \"return sum(values) / len(values)\"\n}')"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__replace_in_file('{\n  \"path\": \"calc.py\",\n  \"old\": \"return sum(values) / (len(values) + 1)\",\n  \"new\": \"return sum(values) / len(values)\"\n}')"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__replace_in_file('{\n  \"path\": \"calc.py\",\n  \"old\": \"return sum(values) / (len(values) + 1)\",\n  \"new\": \"return sum(values) / len(values)\"\n}')"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__replace_in_file('{\n  \"path\": \"calc.py\",\n  \"old\": \"return sum(values) / (len(values) + 1)\",\n  \"new\": \"return sum(values) / len(values)\"\n}')"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__replace_in_file('{\n  \"path\": \"calc.py\",\n  \"old\": \"return sum(values) / (len(values) + 1)\",\n  \"new\": \"return sum(values) / len(values)\"\n}')"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__replace_in_file({\n  path: \"calc.py\",\n  old: \"return sum(values) / (len(values) + 1)\",\n  new: \"return sum(values) / len(values)\"\n})"}
+> builder · aegis-reasoner
+⚙ execute {"code":"tools.aegis.code__run_check({\"check\": \"pytest\", \"path\": \"tests/test_calc.py\"})"}
+> builder · aegis-reasoner
+exit 0
+
+=== 3. Export the sandbox change for the user to apply
+--- aegis-20261114-221206.patch
+diff --git a/calc.py b/calc.py
+index 4a3d8ed..6f43937 100644
+--- a/calc.py
++++ b/calc.py
+@@ -1,3 +1,3 @@
+ def mean(values):
+     """Return the arithmetic mean of a non-empty list of numbers."""
+-    return sum(values) / (len(values) + 1)
++    return sum(values) / len(values)
+
+=== 4. Guard audit log for this run
+[added from R2-audit-ledger.txt, events 64-68]
+64  2026-11-15T03:10:55Z  d1bf11f1  code__list_files  allow  code__*  1  0
+65  2026-11-15T03:11:02Z  d1bf11f1  code__read_file  allow  code__*  1  0
+66  2026-11-15T03:11:06Z  d1bf11f1  code__read_file  allow  code__*  1  0
+67  2026-11-15T03:12:00Z  d1bf11f1  code__replace_in_file  allow  code__replace_in_file  1  0
+68  2026-11-15T03:12:04Z  d1bf11f1  code__run_check  allow  code__run_check  1  0
+
+=== done

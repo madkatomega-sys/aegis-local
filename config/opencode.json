@@ -64,6 +64,7 @@
       },
       "tools": {
         "aegis_code__apply_patch": false,
+        "aegis_code__replace_in_file": false,
         "aegis_code__reset_workspace": false,
         "aegis_github__create_*": false,
         "aegis_github__update_*": false,

@@ -1,0 +1,40 @@
+=== OpenCode 1.19.5 coding-loop walkthrough, 2026-11-14T22:09:52
+
+=== 1. Fresh sandbox copy of the sample project
+
+=== 2. Builder agent fixes the failing test (real OpenCode session, live model)
+prompt: The tests in the sandbox workspace fail. Find the bug, fix it, and show me that the tests pass.
+
+> builder · aegis-reasoner
+
+⚙ aegis_code__list_files Unknown
+⚙ aegis_code__read_file {"path":"tests/test_calc.py","start_line":1,"end_line":800}
+⚙ aegis_code__read_file {"path":"calc.py","start_line":1,"end_line":800}
+⚙ aegis_code__replace_in_file {"path":"calc.py","old":"return sum(values) / (len(values) + 1)","new":"return sum(values) / len(values)"}
+⚙ aegis_code__run_check {"check":"pytest","path":"tests"}
+The tests in the sandbox workspace now pass successfully. The initial failure was due to an incorrect implementation of the `mean` function in `calc.py`, which was dividing the sum by `len(values) + 1` instead of `len(values)`. After fixing this error, the tests ran correctly, verifying that the solution is valid.
+
+✅ **Conclusion**: The bug was resolved by correcting the `mean` function to use the proper formula for the arithmetic mean. The tests now pass, confirming the fix works as intended.
+exit 0
+
+=== 3. Export the sandbox change for the user to apply
+--- aegis-20261114-221038.patch
+diff --git a/calc.py b/calc.py
+index 4a3d8ed..6f43937 100644
+--- a/calc.py
++++ b/calc.py
+@@ -1,3 +1,3 @@
+ def mean(values):
+     """Return the arithmetic mean of a non-empty list of numbers."""
+-    return sum(values) / (len(values) + 1)
++    return sum(values) / len(values)
+
+=== 4. Guard audit log for this run
+[added from R2-audit-ledger.txt, events 59-63]
+59  2026-11-15T03:10:13Z  f3aaa90e  code__list_files  allow  code__*  1  0
+60  2026-11-15T03:10:19Z  f3aaa90e  code__read_file  allow  code__*  1  0
+61  2026-11-15T03:10:24Z  f3aaa90e  code__read_file  allow  code__*  1  0
+62  2026-11-15T03:10:28Z  f3aaa90e  code__replace_in_file  allow  code__replace_in_file  1  0
+63  2026-11-15T03:10:32Z  f3aaa90e  code__run_check  allow  code__run_check  1  0
+
+=== done

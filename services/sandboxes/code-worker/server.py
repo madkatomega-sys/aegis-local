@@ -1,7 +1,7 @@
 """Code worker: a sandboxed Git worktree with allowlisted checks.
 
 The user's repository is copied into a volume (`aegis workspace load`); this worker reads it,
-applies unified diffs to it, and runs allowlisted checks. Nothing here can touch the host
+edits it (unified diffs, or exact find-and-replace), and runs allowlisted checks. Nothing here can touch the host
 checkout. Changes leave only as a diff the user exports and applies.
 
 Commands never go through a shell. Each check is a fixed argument list, optionally followed by
@@ -11,6 +11,7 @@ one path inside the workspace.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -23,6 +24,7 @@ WORKSPACE = Path(os.environ.get("AEGIS_WORKSPACE", "/workspace/repo"))
 TIMEOUT = int(os.environ.get("AEGIS_CHECK_TIMEOUT", "300"))
 MAX_OUTPUT = 20_000
 MAX_READ_LINES = 800
+MAX_EDIT_BYTES = 2_000_000
 
 CHECKS: dict[str, list[str]] = {
     "pytest": ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"],
@@ -38,9 +40,13 @@ def _git_env() -> dict[str, str]:
     return {**os.environ, "GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "safe.directory", "GIT_CONFIG_VALUE_0": "*"}
 
 
-def _run(args: list[str], *, stdin: str | None = None, timeout: int = TIMEOUT) -> subprocess.CompletedProcess[str]:
+def _require_workspace() -> None:
     if not (WORKSPACE / ".git").exists():
         raise ToolError("workspace is empty; ask the user to run `python aegis.py workspace load <path>`")
+
+
+def _run(args: list[str], *, stdin: str | None = None, timeout: int = TIMEOUT) -> subprocess.CompletedProcess[str]:
+    _require_workspace()
     try:
         return subprocess.run(
             args,
@@ -107,6 +113,58 @@ def apply_patch(diff: str) -> str:
     if applied.returncode != 0:
         raise ToolError("patch failed:\n" + _clip(applied.stderr))
     return _clip(_run(["git", "diff", "--stat"]).stdout) or "applied"
+
+
+@mcp.tool()
+def replace_in_file(path: str, old: str, new: str) -> str:
+    """Replace one exact piece of text in an existing workspace file.
+
+    `old` must appear in the file exactly once: copy it from read_file without the line numbers,
+    with enough surrounding lines to be unique. Use apply_patch to create or delete files."""
+    _require_workspace()
+    target = _inside(path)
+    relative = target.relative_to(WORKSPACE.resolve())
+    # Git configuration and hooks run code on the next git command, so they are never editable.
+    if ".git" in relative.parts:
+        raise ToolError("files inside .git can't be edited")
+    if not target.is_file():
+        raise ToolError(f"{path} is not a file; use apply_patch to create files")
+    if target.stat().st_size > MAX_EDIT_BYTES:
+        raise ToolError(f"{path} is larger than {MAX_EDIT_BYTES} bytes")
+    if not old:
+        raise ToolError("old is empty; give the exact text to replace")
+    if old == new:
+        raise ToolError("old and new are the same; nothing to change")
+    try:
+        text = target.read_bytes().decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ToolError(f"{path} is not UTF-8 text") from exc
+    # Models write "\n"; keep a CRLF file's line endings as they are.
+    if "\r\n" in text and "\r" not in old:
+        old, new = old.replace("\n", "\r\n"), new.replace("\n", "\r\n")
+    count = text.count(old)
+    if count != 1:
+        raise ToolError(_replace_miss(path, text, old, count))
+    target.write_bytes(text.replace(old, new, 1).encode("utf-8"))
+    return _clip(_run(["git", "diff", "--", relative.as_posix()]).stdout) or f"replaced in {path}"
+
+
+def _replace_miss(path: str, text: str, old: str, count: int) -> str:
+    """Say why `old` didn't match exactly once. Nothing here loosens the match; it only says what to fix."""
+    if count > 1:
+        return f"old appears {count} times in {path}; include more surrounding lines so it appears once"
+    old_lines = old.strip("\r\n").splitlines()
+    if old_lines and all(re.match(r"\s*\d+\t", line) for line in old_lines):
+        return "old starts each line with a line number from read_file; remove the numbers and the tab after them"
+    wanted = [line.strip() for line in old_lines]
+    have = [line.strip() for line in text.splitlines()]
+    for start in range(len(have) - len(wanted) + 1):
+        if wanted and have[start : start + len(wanted)] == wanted:
+            return (
+                f"old is not in {path} exactly, but lines {start + 1} to {start + len(wanted)} match it "
+                "apart from indentation or trailing spaces; read those lines again and copy them exactly"
+            )
+    return f"old is not in {path}; read the file again and copy the text exactly"
 
 
 @mcp.tool()
