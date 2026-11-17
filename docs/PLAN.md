@@ -368,7 +368,7 @@ of the plan.
 | **Similarity threshold tuning.** | Start with deterministic `difflib` ratio at 0.92 and collect audit-log data before tuning. |
 | **Approval fatigue.** Too many holds and users will disable them. | Policy distinguishes `always`, `when_tainted`, and `never`; defaults hold only destructive or external writes. |
 | **Model licenses vary.** | The project ships no weights. Profiles name candidates only; users check and accept each model's license themselves. |
-| **Project dependencies in an offline sandbox.** `code-worker` has no network, so it can't `pip install` a project's requirements. | Add a one-shot "prepare" container with network access that builds a virtual environment into the workspace volume, then run checks offline. |
+| **Project dependencies in an offline sandbox.** `code-worker` has no network, so it can't `pip install` a project's requirements. | Done in 0.2 as `aegis workspace prepare`. The worker reads the dependency list; a one-shot `workspace-prepare` container with network access, but no repository, tokens, or route to the stack, installs it as wheels into a separate `aegis-venv` volume; the worker mounts that read-only. See `services/sandboxes/code-worker/README.md`. Python only for now. |
 | **OpenCode configuration details** (tool-name globs in agent configs, `{env:}` and `{file:}` substitution, plugin directory name) | Written against current OpenCode docs; verify against the installed version during M5 and pin a minimum OpenCode version. |
 | **Model names in profiles.** | Candidates were current when written. Verify availability, license, and results before marking a profile `tested`. |
 

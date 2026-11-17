@@ -21,6 +21,8 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 WORKSPACE = Path(os.environ.get("AEGIS_WORKSPACE", "/workspace/repo"))
+# The project's dependencies, installed by `aegis workspace prepare` and mounted read-only.
+VENV = Path(os.environ.get("AEGIS_VENV", "/venv"))
 TIMEOUT = int(os.environ.get("AEGIS_CHECK_TIMEOUT", "300"))
 MAX_OUTPUT = 20_000
 MAX_READ_LINES = 800
@@ -37,7 +39,13 @@ mcp = FastMCP("code-worker", host="0.0.0.0", port=8000, stateless_http=True, jso
 
 
 def _git_env() -> dict[str, str]:
-    return {**os.environ, "GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "safe.directory", "GIT_CONFIG_VALUE_0": "*"}
+    env = {**os.environ, "GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "safe.directory", "GIT_CONFIG_VALUE_0": "*"}
+    # Checks run with the prepared environment when there is one, so `python -m pytest` sees the
+    # project's dependencies; it was built with the worker's own packages visible as well.
+    if (VENV / "bin" / "python").exists():
+        env["PATH"] = f"{VENV / 'bin'}{os.pathsep}{env.get('PATH', '')}"
+        env["VIRTUAL_ENV"] = str(VENV)
+    return env
 
 
 def _require_workspace() -> None:

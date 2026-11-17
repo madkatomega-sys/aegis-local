@@ -7,7 +7,9 @@ running), then:
 
 Checks the router, the guard's authentication and tool listing, every sandbox worker, the
 math worker's time limit, the prompt-injection hold, the circuit breaker, and (with --compose)
-that sandboxes can't reach the internet, each other, or their own root filesystem.
+that sandboxes can't reach the internet, each other, or their own root filesystem, and that
+workspace-prepare installs packages the worker can use but can't change, without seeing the
+repository or the rest of the stack.
 """
 
 from __future__ import annotations
@@ -280,6 +282,48 @@ def check_isolation(compose: list[str]) -> None:
         check(f"{service} can't reach internet, router, peers, or its root fs", result == "isolated", result)
 
 
+def check_prepare(compose: list[str]) -> None:
+    """workspace-prepare reaches the package index and nothing else; the worker uses, but can't change, its result."""
+    print("workspace prepare")
+    probe = (
+        "import os, socket\n"
+        "def can(h, p):\n"
+        "    try: socket.create_connection((h, p), 3).close(); return True\n"
+        "    except OSError: return False\n"
+        "out = [n for n, h in (('router', 'model-router'), ('guard', 'mcp-guard-proxy'), ('worker', 'code-worker'))"
+        " if can(h, 8000)]\n"
+        "out += ['repository'] if os.path.exists('/workspace/repo') else []\n"
+        "out += [k for k in os.environ if k.endswith('_TOKEN') or k == 'GITHUB_PAT']\n"
+        "try: open('/app/written', 'w'); out.append('rootfs')\n"
+        "except OSError: pass\n"
+        "print(','.join(out) or 'isolated')\n"
+    )
+    run_prepare = [*compose, "run", "--rm", "--no-deps", "-T"]
+    run = subprocess.run(
+        [*run_prepare, "--entrypoint", "python", "workspace-prepare", "-c", probe],
+        capture_output=True, text=True, check=False,
+    )  # fmt: skip
+    result = run.stdout.strip() or run.stderr.strip()
+    check("prepare can't reach the stack, the repository, tokens, or its root fs", result == "isolated", result)
+
+    def install(requirements: list[str]) -> subprocess.CompletedProcess[str]:
+        body = json.dumps({"smoke": requirements})
+        return subprocess.run(
+            [*run_prepare, "workspace-prepare", "install"], input=body, capture_output=True, text=True, check=False
+        )
+
+    refused = install(["--index-url https://example.invalid/simple"])
+    check("prepare refuses pip options", refused.returncode != 0 and "pip options" in refused.stderr, refused.stderr)
+    installed = install(["tomli-w"])
+    check("prepare installs a wheel", installed.returncode == 0, installed.stderr[-300:])
+    worker = [*compose, "exec", "-T", "code-worker"]
+    used = subprocess.run([*worker, "/venv/bin/python", "-c", "import tomli_w"], capture_output=True, text=True)
+    check("the worker imports what prepare installed", used.returncode == 0, used.stderr[-300:])
+    tamper = subprocess.run([*worker, "sh", "-c", "touch /venv/written"], capture_output=True, text=True)
+    check("the worker can't change the prepared environment", tamper.returncode != 0, tamper.stdout)
+    install([])  # leave the environment empty, as a fresh stack has it
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--router", default="http://127.0.0.1:4000")
@@ -303,6 +347,7 @@ def main() -> int:
     check_guard(Guard(args.guard, args.client_token, args.admin_token, timeout_check=not args.no_timeout_check))
     if args.compose:
         check_isolation(args.compose.split())
+        check_prepare(args.compose.split())
     print(f"\n{len(FAILURES)} failure(s)" if FAILURES else "\nall smoke checks passed")
     return 1 if FAILURES else 0
 

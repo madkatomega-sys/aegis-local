@@ -4,6 +4,7 @@
 # Networks:
 #   control         router and guard; can reach the host's llama-server and, for the guard, GitHub
 #   sandbox-*       one internal network per worker; no route out, only the guard can reach them
+#   prepare-egress  workspace-prepare only; reaches the package index, and nothing else in the stack
 #
 # Every published port binds to 127.0.0.1.
 
@@ -81,6 +82,9 @@ services:
       HOME: /tmp
     volumes:
       - aegis-workspace:/workspace
+      # The project's dependencies, from `aegis workspace prepare`. Read-only: neither the agent
+      # nor the tests it runs can change what is installed.
+      - aegis-venv:/venv:ro
     tmpfs:
       - /tmp:size=512m,exec
     networks: [sandbox-code]
@@ -88,6 +92,30 @@ services:
     cpus: 2
     pids_limit: 256
     healthcheck: *healthcheck
+
+  # One-off: `python aegis.py workspace prepare` runs it to install the workspace project's
+  # dependencies into aegis-venv. It has network access, so it never sees the repository (only the
+  # requirement list, on stdin), holds no tokens, and shares no network with the rest of the stack.
+  workspace-prepare:
+    <<: *hardening
+    restart: "no"
+    profiles: [prepare]
+    image: ${AEGIS_REGISTRY:-aegis-local}/code-worker:${AEGIS_VERSION:-dev}
+    entrypoint: ["python", "/app/prepare.py"]
+    command: ["install"]
+    environment:
+      HOME: /tmp
+      PIP_CACHE_DIR: /cache
+      PIP_NO_INPUT: "1"
+    volumes:
+      - aegis-venv:/venv
+      - pip-cache:/cache
+    tmpfs:
+      - /tmp:size=1g,exec
+    networks: [prepare-egress]
+    mem_limit: 2g
+    cpus: 2
+    pids_limit: 256
 
   math-physics-mcp:
     <<: *hardening
@@ -132,8 +160,11 @@ networks:
     internal: true
   sandbox-writing:
     internal: true
+  prepare-egress: {}
 
 volumes:
   aegis-workspace: {}
+  aegis-venv: {}
+  pip-cache: {}
   guard-data: {}
   writing-index: {}

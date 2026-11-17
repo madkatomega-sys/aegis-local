@@ -129,8 +129,13 @@ def test_compose_images_follow_registry_and_version(repo_root):
     import yaml
 
     compose = yaml.safe_load((repo_root / "docker-compose.yml").read_text(encoding="utf-8"))
+    # workspace-prepare runs the code worker's image (its prepare.py), so the installed environment
+    # matches the worker's Python exactly; it has no image or build of its own.
+    shares = {"workspace-prepare": "code-worker"}
     for name, service in compose["services"].items():
-        assert service["image"] == f"${{AEGIS_REGISTRY:-aegis-local}}/{name}:${{AEGIS_VERSION:-dev}}"
+        image = shares.get(name, name)
+        assert service["image"] == f"${{AEGIS_REGISTRY:-aegis-local}}/{image}:${{AEGIS_VERSION:-dev}}"
+        assert ("build" in service) == (name not in shares)
 
 
 def test_compose_publishes_only_to_loopback(repo_root):
