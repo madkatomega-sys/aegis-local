@@ -208,6 +208,7 @@ def main() -> int:
             smoke.check_reasoner_schema(aegis.ROUTER, args.reasoner_schema_runs)
         smoke.check_guard(guard)
         smoke.check_isolation(compose)
+        smoke.check_prepare(compose)
 
         tier_speeds()
         workspace_round_trip(guard, Path(args.sample_repo).resolve())
