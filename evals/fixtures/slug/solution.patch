@@ -1,0 +1,11 @@
+diff --git a/slug.py b/slug.py
+new file mode 100644
+--- /dev/null
++++ b/slug.py
+@@ -0,0 +1,6 @@
++import re
++
++
++def slugify(text):
++    """Lowercase words made of letters and digits, joined by single hyphens."""
++    return "-".join(re.findall(r"[a-z0-9]+", text.lower()))

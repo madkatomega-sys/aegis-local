@@ -32,6 +32,13 @@ All notable changes to this project are recorded here. The format follows
   `docs/validation/opencode-2026-11-14-windows11-rtx4070/`: the tools each agent is offered
   before and after the hardening below, probes, and ten coding-loop walkthroughs with their
   audit rows. `docs/PLATFORMS.md` names the OpenCode versions checked.
+- An eval suite in `evals/`: `python evals/run.py` asks the builder agent to fix five small broken
+  projects through the real harness and scores each run by applying its exported diff to a clean
+  copy and running the tests. The projects cover one wrong line, two edits in one function, a CRLF
+  file, bugs in two files, and a missing module. It compares builder setups (arms) with interleaved
+  runs, resumes an interrupted batch, and records the commit, OpenCode version, model files and
+  GPU load with the results. `tests/test_evals.py` checks in CI that every fixture fails as given
+  and passes with its reference fix.
 
 ### Changed
 
@@ -46,6 +53,9 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- `aegis.py workspace export` keeps CRLF line endings. It read Git's diff in text mode, which
+  turned CRLF into LF, so a patch for a file with CRLF line endings didn't apply to the user's
+  repository.
 - `code__apply_patch` accepts a diff that is missing its final newline or has miscounted
   hunk headers (`git apply --recount`). Both are common in small models' diffs, and git rejected
   them as corrupt. Removed and context lines must still match the file exactly.

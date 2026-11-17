@@ -1,0 +1,20 @@
+diff --git a/cart.py b/cart.py
+--- a/cart.py
++++ b/cart.py
+@@ -4,6 +4,6 @@ from money import cents
+ def total(lines):
+     """Total of (name, unit price in dollars, quantity) lines, in cents."""
+     result = 0
+-    for _name, price, _quantity in lines:
+-        result += cents(price)
++    for _name, price, quantity in lines:
++        result += cents(price) * quantity
+     return result
+diff --git a/money.py b/money.py
+--- a/money.py
++++ b/money.py
+@@ -1,3 +1,3 @@
+ def cents(amount):
+     """Convert an amount in dollars to whole cents."""
+-    return int(amount * 100)
++    return round(amount * 100)

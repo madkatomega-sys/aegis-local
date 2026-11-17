@@ -118,6 +118,7 @@ aegis-local/
 ├── .opencode/plugins/        status display (informational only)
 ├── vault-example/            sample notes for the writing auditor
 ├── docs/                     Plan, threat model, platforms, model loadouts
+├── evals/                    Fixtures and runner that score the builder agent end to end
 └── tests/                    Unit tests for the control plane
 ```
 
@@ -127,6 +128,7 @@ aegis-local/
 - [Threat model](docs/THREAT-MODEL.md): what the harness defends against, and what it doesn't
 - [Platform setup](docs/PLATFORMS.md): Windows 11 and Linux
 - [Model loadouts](docs/MODEL-LOADOUTS.md): picking models and quantizations for your GPU
+- [Evals](evals/README.md): measuring how often the builder agent actually fixes a broken project
 
 ## Contributing
 
