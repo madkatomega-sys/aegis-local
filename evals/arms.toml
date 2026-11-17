@@ -1,0 +1,25 @@
+# Builder setups the eval can run. Each arm is this checkout's config/opencode.json and
+# config/agents/, with these changes for the builder agent only:
+#   builder_prompt  a file (relative to this one) that replaces config/agents/builder.md
+#   disable_tools   OpenCode tool names turned off for the builder
+
+[default]
+description = "The builder as configured in config/."
+
+[no-replace]
+description = "The configured builder prompt, with replace_in_file turned off."
+disable_tools = ["aegis_code__replace_in_file"]
+
+[neutral]
+description = "A prompt that names no edit tool, with replace_in_file on (arm C of the replace_in_file A/B)."
+builder_prompt = "arms/builder-neutral.md"
+
+[neutral-no-replace]
+description = "The same neutral prompt, with replace_in_file off (arm D)."
+builder_prompt = "arms/builder-neutral.md"
+disable_tools = ["aegis_code__replace_in_file"]
+
+["release-0.1.0"]
+description = "The 0.1.0 builder: its diff-only prompt, with replace_in_file off (arm A)."
+builder_prompt = "arms/builder-0.1.0.md"
+disable_tools = ["aegis_code__replace_in_file"]

@@ -50,6 +50,9 @@ availability, its license, and its results on the harness's own tool-call and ve
 2. Fill in the models you used and the measured numbers in `[measured]`: tokens per second for
    each tier at your context size, and peak VRAM.
 3. Run `python aegis.py up --profile <name>` and the router's smoke test.
-4. Open a pull request using the **GPU profile** issue template's checklist.
+4. Run the [eval suite](../evals/README.md) (`python evals/run.py run --runs 10`) and include its
+   `summary.md` and `manifest.json`: they say how often the builder fixed each fixture with these
+   models, and which model files were loaded.
+5. Open a pull request using the **GPU profile** issue template's checklist.
 
 Profiles stay `tested = false` until a second person reproduces the numbers.

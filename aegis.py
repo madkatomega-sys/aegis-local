@@ -195,11 +195,15 @@ def image_settings(pull: bool) -> dict[str, str]:
     return {"AEGIS_REGISTRY": REGISTRY, "AEGIS_VERSION": VERSION} if pull else {}
 
 
-def compose(runtime: str, *args: str, env: dict[str, str], capture: bool = False) -> subprocess.CompletedProcess[str]:
-    """Run compose with the image choice recorded by the last `up`, so later commands use the same images."""
+def compose(
+    runtime: str, *args: str, env: dict[str, str], capture: bool = False, text: bool = True
+) -> subprocess.CompletedProcess[Any]:
+    """Run compose with the image choice recorded by the last `up`, so later commands use the same images.
+
+    With `text=False` captured output stays bytes, so line endings survive (text mode turns CRLF into LF)."""
     cmd = [runtime, "compose", "-f", str(COMPOSE_FILE), *args]
     full = {**os.environ, **read_env_file(IMAGES), **env}
-    return subprocess.run(cmd, env=full, cwd=ROOT, text=True, capture_output=capture, check=False)
+    return subprocess.run(cmd, env=full, cwd=ROOT, text=text, capture_output=capture, check=False)
 
 
 def llama_bind_host(cfg: dict[str, str], runtime: str | None) -> str:
@@ -495,6 +499,27 @@ def cmd_reset(args: argparse.Namespace) -> int:
     return 0
 
 
+def workspace_load(runtime: str, env: dict[str, str], source: Path) -> int:
+    """Replace the sandbox's workspace with a clone of `source`'s committed HEAD. Returns compose's exit code."""
+    script = f"{SAFE_DIRECTORY} && rm -rf /workspace/repo && git clone --quiet --no-hardlinks /src /workspace/repo"
+    # Compose reads a relative path as a named volume, so the mount needs an absolute one.
+    mount = f"{source.resolve().as_posix()}:/src:ro"
+    run = ("run", "--rm", "--no-deps", "-v", mount, "--entrypoint", "sh", "code-worker", "-c", script)
+    return compose(runtime, *run, env=env).returncode
+
+
+def workspace_diff(runtime: str, env: dict[str, str]) -> bytes:
+    """The sandbox's changes against the loaded commit, as Git wrote them (CRLF lines stay CRLF)."""
+    script = (
+        f"{SAFE_DIRECTORY} && cd /workspace/repo && git add -A --intent-to-add >/dev/null 2>&1; git diff HEAD --binary"
+    )
+    run = ("run", "--rm", "--no-deps", "--entrypoint", "sh", "code-worker", "-c", script)
+    result = compose(runtime, *run, env=env, capture=True, text=False)
+    if result.returncode != 0:
+        die(result.stderr.decode("utf-8", errors="replace").strip() or "export failed")
+    return result.stdout
+
+
 def cmd_workspace(args: argparse.Namespace) -> int:
     cfg = settings()
     runtime = detect_runtime(cfg) or die("no container runtime found")
@@ -503,39 +528,18 @@ def cmd_workspace(args: argparse.Namespace) -> int:
         source = Path(args.path).resolve()
         if not (source / ".git").exists():
             die(f"{source} is not a Git repository")
-        script = f"{SAFE_DIRECTORY} && rm -rf /workspace/repo && git clone --quiet --no-hardlinks /src /workspace/repo"
-        result = compose(
-            runtime,
-            "run",
-            "--rm",
-            "--no-deps",
-            "-v",
-            f"{source.as_posix()}:/src:ro",
-            "--entrypoint",
-            "sh",
-            "code-worker",
-            "-c",
-            script,
-            env=env,
-        )
-        if result.returncode == 0:
+        code = workspace_load(runtime, env, source)
+        if code == 0:
             print(f"loaded the committed HEAD of {source} into the sandbox (uncommitted changes are not copied)")
-        return result.returncode
-    script = (
-        f"{SAFE_DIRECTORY} && cd /workspace/repo && git add -A --intent-to-add >/dev/null 2>&1; git diff HEAD --binary"
-    )
-    result = compose(
-        runtime, "run", "--rm", "--no-deps", "--entrypoint", "sh", "code-worker", "-c", script, env=env, capture=True
-    )
-    if result.returncode != 0:
-        die(result.stderr.strip() or "export failed")
-    if not result.stdout.strip():
+        return code
+    diff = workspace_diff(runtime, env)
+    if not diff.strip():
         print("no changes in the sandbox")
         return 0
     out_dir = ROOT / "exports"
     out_dir.mkdir(exist_ok=True)
     out = out_dir / f"aegis-{time.strftime('%Y%m%d-%H%M%S')}.patch"
-    out.write_text(result.stdout, encoding="utf-8", newline="\n")
+    out.write_bytes(diff)
     print(f"wrote {out}\nreview it, then: git -C <your repo> apply {out}")
     return 0
 

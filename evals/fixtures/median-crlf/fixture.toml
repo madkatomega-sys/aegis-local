@@ -1,0 +1,3 @@
+description = "One wrong line in a file with CRLF line endings: median() averages the two middle values by dividing by 3."
+# Written with CRLF line endings when the fixture is built; the repository stores LF (see .gitattributes).
+crlf = true

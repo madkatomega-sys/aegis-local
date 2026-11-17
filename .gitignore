@@ -8,6 +8,7 @@
 *.sqlite
 *.db
 exports/
+evals/results/
 
 # Model weights never belong in the repo
 models/

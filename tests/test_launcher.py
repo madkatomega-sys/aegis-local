@@ -1,4 +1,5 @@
 import json
+import subprocess
 
 import pytest
 
@@ -19,6 +20,27 @@ def test_tier0_never_thinks(name):
 
 def test_workspace_commands_trust_the_read_only_mount():
     assert "safe.directory" in aegis.SAFE_DIRECTORY and "--global" in aegis.SAFE_DIRECTORY
+
+
+CRLF_DIFF = b"diff --git a/a.py b/a.py\n--- a/a.py\n+++ b/a.py\n@@ -1 +1 @@\n-x = 1\r\n+x = 2\r\n"
+
+
+def test_workspace_export_keeps_crlf_lines(monkeypatch, tmp_path):
+    """Text mode turned the diff's CRLF lines into LF, so a patch for a CRLF file no longer applied."""
+    calls = []
+
+    def fake_compose(runtime, *args, env, capture=False, text=True):
+        calls.append(text)
+        return subprocess.CompletedProcess(args, 0, stdout=CRLF_DIFF if not text else CRLF_DIFF.decode(), stderr=b"")
+
+    monkeypatch.setattr(aegis, "compose", fake_compose)
+    monkeypatch.setattr(aegis, "detect_runtime", lambda cfg: "docker")
+    monkeypatch.setattr(aegis, "ROOT", tmp_path)
+    assert aegis.workspace_diff("docker", {}) == CRLF_DIFF
+    assert aegis.main(["workspace", "export"]) == 0
+    assert calls == [False, False]
+    (patch,) = (tmp_path / "exports").glob("*.patch")
+    assert patch.read_bytes() == CRLF_DIFF
 
 
 def test_profiles_exist():

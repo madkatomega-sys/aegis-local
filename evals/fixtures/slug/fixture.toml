@@ -1,0 +1,2 @@
+description = "A missing module: the tests import slugify() from slug.py, which doesn't exist, so the fix is a new file."
+prompt = "The tests in the sandbox workspace fail because a module they import is missing. Write it so the tests pass, and show me that they pass."
