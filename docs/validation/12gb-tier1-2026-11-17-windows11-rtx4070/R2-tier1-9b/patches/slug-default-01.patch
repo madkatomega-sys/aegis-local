@@ -1,0 +1,57 @@
+diff --git a/__pycache__/slug.cpython-315.pyc b/__pycache__/slug.cpython-315.pyc
+new file mode 100644
+index 0000000000000000000000000000000000000000..2da7f37816083854708022e81967c4cc4937f5a6
+GIT binary patch
+literal 1469
+zcmZ`3-)kI2_?z3kAGyn2wOTZXM<*A5aMGNTNLtEqK6r?RK(Y-76%*EFZ*#Zp-tKm0
+zuIUAYD+)IFkc3tmMJNcOzWHeN!GFPW)spo^@To77aEKIq@SDACVq^T^oB3wG-#=z9
+z<g#f%`0=a1FZ~_^Fy$eF#6B_j0*M}?1{^eU3bfcMxcmesOEFEExrkb?1LR>D7Lsp`
+za%D+94NJ;=Xm{Vj{x(I1#4?$=g<3_awUj_<@_!o3<mLRKjYvP*3+QqD088rHGmB2A
+zX|Hr?N7#-ny0q;zI*wH~rQ?0)pdzgx4yJJFA=Y6zHuE6{gtvKEAWfo?ckzA*TI`UX
+zjEzG{d5DFAKo!<C5hR!;I?OGRK;eSnmRRvv+YnrOD+Wo90hRr3Fskc@>w3ZvmaYd+
+z%WI6Y{O?;C7nj*yhrb|8CidiVYhqV!pASz1<U*K?BqYQUF>H142NFF*jm$@h;wgeU
+z%*&LIfGmK7sGc4yq>j^;{jS4*q=}{+CtWAU`O=igOSF3gC1w0aAo4SxJi@@^p%rX|
+zy7uK8o_p0|g34Y{;ZcLuFU(D@Fxzq)PM3z&Pp9X+Rg0MhxA+;#EZ;Fqi&NKgCk@AM
+z8E&U-G25hO%V35nEXL`oEn2kI^;?$9&!kPyaSR`|X}jYH+jp!39yQzs70hmP>R3j@
+zcAKvVX5j3(%}A!44hVg$XR^`Lh=ccV>EUS+-b9K*A?#r7G=Tr)ag~iK^8!js7!K?r
+znIjskLT?1n!t6M}2s{_QifN@qa3skjE=ijk4yIa)1+nt0fhx1*a*$u7OcpvAsWdIu
+zy5_TLkdMZ*;&`Uv@M`&hmqk%tz~#~R;vr7zUGc5BQ~9)Vr}|lS>$R`>&rePLARcj<
+z;zuu)<1B|nNe$FXp6v#4?&GTr;*RVGp0IF!DaPbv2CDS=SU}<1!AHWzkS`7LcW}85
+zyEzy=v2kww+-B|e?AGkfxqfE6SNkoK-8j2`_TI_bccOo?*3Z=BUG7kBo8O%8XP%e0
+zCpONnpZ~b>AXB)PDQuhlOz|hR$mE9=q;$P)*siXZl0j0}8=k4_VE~fj8g2P{72f56
+z;#h8=8mxIWi2KZT#WxUI7#1^C8U8#~hM!#c^YFKk*i#50J5cyDfp2=3f;xI*?Y=Vh
+ztD4(Mrf*EkU_W?&^UD3?vpcEmdUMmf-P&qxU-{&6KUe%EHL<5aYHTkKYCd%J4+FV3
+AtpET3
+
+literal 0
+HcmV?d00001
+
+diff --git a/slug.py b/slug.py
+new file mode 100644
+index 0000000..3c9ea79
+--- /dev/null
++++ b/slug.py
+@@ -0,0 +1,23 @@
++"""Slugify utility module."""
++
++
++def slugify(text: str) -> str:
++    """Convert text to a URL-friendly slug.
++    
++    Lowercases, replaces non-alphanumeric characters with hyphens,
++    collapses multiple hyphens, and trims leading/trailing hyphens.
++    """
++    # Replace consecutive whitespace with a single space
++    text = " ".join(text.split())
++    # Replace non-alphanumeric characters with hyphens
++    slug = "".join(char if char.isalnum() else "-" for char in text)
++    # Collapse multiple hyphens into one
++    slug = "-".join(slug.split("-"))
++    # Trim leading/trailing hyphens and lowercase
++    return slug.lower().strip("-")
++
++
++if __name__ == "__main__":
++    import sys
++    if len(sys.argv) > 1:
++        print(slugify(sys.argv[1]))

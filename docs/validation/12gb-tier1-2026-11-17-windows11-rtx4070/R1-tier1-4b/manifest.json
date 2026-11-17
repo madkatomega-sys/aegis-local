@@ -1,0 +1,25 @@
+{
+  "started": "2026-11-17T18:42:42+00:00",
+  "aegis_commit": "594e9672324b960039988b0ee2bdcb99831345ea",
+  "uncommitted_changes": false,
+  "opencode": "1.19.5",
+  "profile": "nvidia-12gb",
+  "models": {
+    "tier0": "Qwen3-4B-Q4_K_M.gguf",
+    "tier1": "Qwen3-4B-Q4_K_M.gguf"
+  },
+  "fixtures": [
+    "calc",
+    "cart",
+    "chunks",
+    "median-crlf",
+    "slug"
+  ],
+  "arms": {
+    "default": {
+      "description": "The builder as configured in config/."
+    }
+  },
+  "runs": 10,
+  "timeout_seconds": 900.0
+}

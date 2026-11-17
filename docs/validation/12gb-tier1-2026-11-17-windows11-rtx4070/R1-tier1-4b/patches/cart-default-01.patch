@@ -1,0 +1,11 @@
+diff --git a/cart.py b/cart.py
+index 27abfbc..a43a6b1 100644
+--- a/cart.py
++++ b/cart.py
+@@ -5,5 +5,5 @@ def total(lines):
+     """Total of (name, unit price in dollars, quantity) lines, in cents."""
+     result = 0
+     for _name, price, _quantity in lines:
+-        result += cents(price)
++        result += int(round(price * 100))
+     return result

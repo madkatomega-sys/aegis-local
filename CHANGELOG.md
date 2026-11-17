@@ -50,6 +50,12 @@ All notable changes to this project are recorded here. The format follows
   OpenCode 1.19.5 and 2.3.0.
 - The agent prompts say that workspace paths are relative to the workspace root, never host
   paths.
+- The `nvidia-12gb` profile has measured numbers for its first tier 1 candidate, Qwen3.5-9B Q6_K,
+  on an RTX 4070: about 51 tokens/s and 8.8 GB peak for the whole card. In the eval suite it fixed
+  14 of 15 runs against 10 of 19 for Qwen3-4B, including 11 of 12 runs of the two-edit and
+  new-module fixtures, which the 4B never fixed
+  ([evidence](docs/validation/12gb-tier1-2026-11-17-windows11-rtx4070/README.md)). The profile
+  stays `tested = false` until a second person reproduces the numbers.
 
 ### Fixed
 
