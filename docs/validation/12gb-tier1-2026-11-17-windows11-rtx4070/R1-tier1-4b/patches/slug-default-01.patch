@@ -1,0 +1,23 @@
+diff --git a/slug.py b/slug.py
+new file mode 100644
+index 0000000..ac7f6e8
+--- /dev/null
++++ b/slug.py
+@@ -0,0 +1,17 @@
++def slugify(s):
++    # Convert to lowercase
++    s = s.lower()
++    # Replace spaces with hyphens
++    s = s.replace(' ', '-')
++    # Replace commas with hyphens
++    s = s.replace(',', '-')
++    # Remove non-alphanumeric (except hyphens)
++    s = re.sub(r'[^a-z0-9-]', '-', s)
++    # Collapse multiple hyphens
++    s = re.sub(r'--+', '-', s)
++    # Trim leading/trailing hyphens
++    s = s.strip('-')
++    # Collapse multiple hyphens into single
++    s = s.replace('--', '-')
++    # Keep existing hyphens and digits
++    return s

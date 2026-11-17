@@ -1,0 +1,21 @@
+diff --git a/chunks.py b/chunks.py
+index f351c00..26d0036 100644
+--- a/chunks.py
++++ b/chunks.py
+@@ -4,7 +4,15 @@ def chunks(items, size):
+     current = []
+     for item in items:
+         current.append(item)
+-        if len(current) > size:
++        if len(current) == size:
++        result.append(current)
++        current = []
++    if current:
++        result.append(current)
++        result.append(current)
++        current = []
++    if current:
++        result.append(current)
+             result.append(current)
+             current = []
+     return result

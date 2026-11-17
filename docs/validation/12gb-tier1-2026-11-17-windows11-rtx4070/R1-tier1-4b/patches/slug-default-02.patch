@@ -1,0 +1,26 @@
+diff --git a/slug.py b/slug.py
+new file mode 100644
+index 0000000..bb009b4
+--- /dev/null
++++ b/slug.py
+@@ -0,0 +1,20 @@
++def slugify(text):
++    # Replace spaces and punctuation with hyphens
++    text = text.replace(' ', '-').replace('!', '-').replace(',', '-').replace('?', '-').replace('.', '-')
++import re
++
++def slugify(text):
++    # Replace spaces and punctuation with hyphens
++    text = text.replace(' ', '-').replace('!', '-').replace(',', '-').replace('?', '-').replace('.', '-').replace(' ', '-')
++    # Collapse multiple hyphens into single
++    text = re.sub(r'--+', '-', text)
++    # Trim leading/trailing hyphens
++    text = text.strip('-')
++    return text
++    # Trim leading/trailing hyphens
++    text = text.strip('-')
++    return text
++
++if __name__ == '__main__':
++    import sys
++    print(slugify(sys.argv[1]))

@@ -1,0 +1,11 @@
+diff --git a/slug b/slug
+new file mode 100644
+index 0000000..82ccd9a
+--- /dev/null
++++ b/slug
+@@ -0,0 +1,5 @@
++"""
++
++def slugify(text):
++    return text.lower().replace(' ', '-').replace('--', '-').strip()
++"""
