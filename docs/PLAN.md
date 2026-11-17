@@ -303,9 +303,21 @@ about safety changes. That is the test of a correct split.
 | **M6 Release 0.1** | Threat model review, signed container images, tested profile matrix, docs pass | Tagged release, published images, changelog | Done |
 | **Later** | Per-value taint (CaMeL-style planner programs), Lean 4 worker, NLI claim checker, Qdrant hybrid search, embedding-based similarity, vLLM backend | Proposed through issues and design docs | |
 
-The open items from M1 and M5 carry into 0.2: an OpenCode walkthrough with a pinned minimum
+The open items from M1 and M5 carried into 0.2: an OpenCode walkthrough with a pinned minimum
 version, the GitHub upstream against a real token, a native Linux run on real hardware, and AMD
 and Intel profile reports.
+
+Where they stand in 0.2:
+
+| Item | Status |
+|---|---|
+| OpenCode walkthrough | Done for OpenCode 1.19.5 and 2.3.0 ([PLATFORMS.md](PLATFORMS.md#opencode-versions)) |
+| GitHub upstream with a real fine-grained token | **Deferred, open.** Not blocking 0.2, by the maintainer's decision. The guard's handling of GitHub content is tested against a fixture server in CI; the hosted endpoint with a real token has never been used |
+| Native Linux run on real hardware | **Deferred, open.** Not blocking 0.2, by the maintainer's decision. CI runs the full stack on Linux with a stub model on every pull request. Native `llama-server` on Linux, and the bridge-address binding that keeps it off the LAN ([§11](#11-risks-and-open-questions)), are unverified |
+| AMD and Intel profile reports | Open, awaiting testers |
+
+Until a deferred item is run and its evidence added under `docs/validation/`, treat it as
+untested, not as passing.
 
 ## 10. Design corrections made while scaffolding
 
@@ -361,7 +373,7 @@ of the plan.
 
 | Risk or question | Current thinking |
 |---|---|
-| **Linux loopback.** On Linux, `host-gateway` resolves to the bridge address, so a `llama-server` bound to `127.0.0.1` isn't reachable from containers. | `aegis.py` binds to the bridge gateway address on Linux (reachable from host and containers, not the LAN). Needs testing on rootless Podman with `pasta`. |
+| **Linux loopback.** On Linux, `host-gateway` resolves to the bridge address, so a `llama-server` bound to `127.0.0.1` isn't reachable from containers. | `aegis.py` binds to the bridge gateway address on Linux (reachable from host and containers, not the LAN). Not yet tested on real Linux hardware (deferred past 0.2; see §9), including rootless Podman with `pasta`. |
 | **Podman Desktop on Windows** reaching host loopback | Docker Desktop is known to work via `host.docker.internal`. Podman needs verification, possibly WSL mirrored networking. |
 | **GitHub MCP transport.** The official server is stdio-first; a hosted HTTP endpoint also exists. | Config supports an HTTP upstream with bearer auth. A stdio bridge container is the fallback. |
 | **Extractor quality.** A small model may drop facts while quarantining. | Extraction schema keeps a `verbatim_snippets` field capped in length and clearly marked as untrusted data; the user can widen it per server. |

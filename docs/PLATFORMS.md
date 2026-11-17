@@ -82,6 +82,10 @@ tools the config doesn't know about; check them the same way before relying on t
 
 ## Linux notes
 
+- Native Linux hasn't been run on real hardware yet; CI covers the container stack on Linux with a
+  stub model. The notes below are how it is designed to work. Until a run is reported (see
+  [PLAN.md §9](PLAN.md#9-milestones-and-acceptance-criteria)), check that `llama-server` isn't
+  reachable from another machine on your network before relying on it.
 - On Linux, containers reach the host through the bridge address, not `127.0.0.1`. `aegis.py`
   binds `llama-server` to the Docker bridge gateway (for example `172.17.0.1`), which is reachable
   from the host and from containers but not from the LAN. Override with `AEGIS_LLAMA_HOST`.
