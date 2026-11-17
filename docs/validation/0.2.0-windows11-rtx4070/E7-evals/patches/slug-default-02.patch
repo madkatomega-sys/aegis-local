@@ -1,0 +1,20 @@
+diff --git a/slug.py b/slug.py
+new file mode 100644
+index 0000000..5e7a626
+--- /dev/null
++++ b/slug.py
+@@ -0,0 +1,14 @@
++import re
++
++
++def slugify(text):
++    """Convert text to a URL-friendly slug."""
++    # Lowercase the text
++    text = text.lower()
++    # Replace non-alphanumeric characters (except hyphens) with spaces
++    text = re.sub(r'[^a-z0-9-]', ' ', text)
++    # Collapse multiple spaces into one
++    text = re.sub(r'\s+', '-', text)
++    # Remove leading and trailing hyphens
++    text = text.strip('-')
++    return text

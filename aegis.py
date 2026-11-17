@@ -40,7 +40,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 REGISTRY = "ghcr.io/madkatomega-sys/aegis-local"
 ROOT = Path(__file__).resolve().parent
 STATE = ROOT / ".aegis"

@@ -6,6 +6,20 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-17
+
+Makes the coding loop work with small local models, and measures it. The builder gets an exact
+find-and-replace edit tool, which on its own took a 4B model from 1 to 9 fixes in 10 on a
+one-line bug. An eval suite in the repository now scores the agent end to end. The 12 GB
+profile's recommended 9B model is measured with it. `workspace prepare` lets the sandbox run tests
+that import packages. Validation on Windows 11 with an RTX 4070 is in
+[docs/validation](docs/validation/0.2.0-windows11-rtx4070/README.md).
+
+Not verified in this release, and left open for later: a native Linux run on real hardware
+(including the bridge-address binding that keeps `llama-server` off the LAN), and the GitHub
+upstream with a real token. CI covers Linux with a stub model, and GitHub content through a
+fixture server. See [PLAN.md](docs/PLAN.md#9-milestones-and-acceptance-criteria).
+
 ### Added
 
 - `code__replace_in_file(path, old, new)`: replaces one exact piece of text in an existing
@@ -32,10 +46,10 @@ All notable changes to this project are recorded here. The format follows
   `docs/validation/opencode-2026-11-14-windows11-rtx4070/`: the tools each agent is offered
   before and after the hardening below, probes, and ten coding-loop walkthroughs with their
   audit rows. `docs/PLATFORMS.md` names the OpenCode versions checked.
-- An eval suite in `evals/`: `python evals/run.py` asks the builder agent to fix five small broken
+- An eval suite in `evals/`: `python evals/run.py` asks the builder agent to fix six small broken
   projects through the real harness and scores each run by applying its exported diff to a clean
   copy and running the tests. The projects cover one wrong line, two edits in one function, a CRLF
-  file, bugs in two files, and a missing module. It compares builder setups (arms) with interleaved
+  file, bugs in two files, a missing module, and tests that import a package. It compares builder setups (arms) with interleaved
   runs, resumes an interrupted batch, and records the commit, OpenCode version, model files and
   GPU load with the results. `tests/test_evals.py` checks in CI that every fixture fails as given
   and passes with its reference fix.
@@ -142,5 +156,6 @@ Found by the hardware validation on Windows 11 with an RTX 4070 (see
   container bridge (Linux).
 - The guard and its admin API require separate tokens that sandboxes never receive.
 
-[Unreleased]: https://github.com/madkatomega-sys/aegis-local/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/madkatomega-sys/aegis-local/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/madkatomega-sys/aegis-local/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/madkatomega-sys/aegis-local/releases/tag/v0.1.0

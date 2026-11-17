@@ -57,7 +57,7 @@ build for your GPU, and GGUF model files of your choice. Platform details are in
 [docs/PLATFORMS.md](docs/PLATFORMS.md).
 
 ```bash
-git clone --branch v0.1.0 https://github.com/madkatomega-sys/aegis-local.git
+git clone --branch v0.2.0 https://github.com/madkatomega-sys/aegis-local.git
 cd aegis-local
 cp .env.example .env          # then set AEGIS_LLAMA_SERVER and the two model paths
 python aegis.py doctor

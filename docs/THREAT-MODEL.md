@@ -37,11 +37,11 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
 | A malicious or compromised package installed for the project's tests (`workspace prepare`) | The install runs in its own container: it has network access but never sees the repository (it gets only the dependency list), holds no tokens, and shares no network with the router, guard, or workers. By default it installs wheels only, so no build script runs. Requirements must name packages on the index: no pip options, URLs, or paths. The worker mounts the result read-only. The user starts it; the agent can't | `workspace-prepare`, `prepare.py` |
 | Host file damage | Repo copied into a volume; changes leave only as an exported diff the user applies | `aegis.py workspace` |
 | A workspace edit turning into code execution through Git | Neither edit tool writes under `.git`, where Git reads `core.fsmonitor`, hooks, and similar settings on its next command (including the read-only tools and `workspace export`, which need no approval). `replace_in_file` refuses `.git` and anything outside the workspace after resolving symlinks; `apply_patch` relies on `git apply`, which rejects `.git` paths | `code-worker` |
-| LAN exposure | All ports bound to `127.0.0.1` (or the container bridge on Linux) | Compose, `aegis.py` |
+| LAN exposure | All ports bound to `127.0.0.1` (or the container bridge on Linux; not yet verified on real Linux hardware, see the known limitations) | Compose, `aegis.py` |
 | Wrong math or physics | Numeric and symbolic answers come from SymPy, pint, SciPy | `math-physics-mcp` |
 | Wrong code | Changes judged by exit codes of tests, type checks, linters | `code-worker` |
 | Invented citations | Quotes checked byte for byte against hashed source chunks | `writing-auditor` |
-| Bypass through the IDE | Enforcement never depends on OpenCode, its plugins, or agent prompts; OpenCode's host-side edit, shell, and web tools are disabled | Design rule, `config/opencode.json` |
+| Bypass through the IDE | Enforcement never depends on OpenCode, its plugins, or agent prompts. Every OpenCode tool that reaches the host, the web, or another agent is turned off (edit, shell, web, file reading and search, skills, delegation to OpenCode's built-in agents), and only the local models are listed; checked on OpenCode 1.19.5 and 2.3.0 by capturing the tools each agent is offered | Design rule, `config/opencode.json` |
 | Sandboxed code calling the guard | `/mcp` requires a client token and `/admin` a separate admin token; sandboxes hold neither | Guard, `aegis.py` |
 | Workers reaching each other | One internal network per worker | Compose networks |
 | Runaway computation (a pathological integral) | Each math computation runs in its own process and is killed at a wall-clock limit; container CPU, memory, and PID limits as backstop | `math-physics-mcp` |
@@ -104,5 +104,10 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
 - **The code worker trusts its workspace by default.** Set the `code` server to `untrusted` in
   `config/mcp-servers.yaml` when you load a repository you didn't write, so its file contents
   and test output taint the session.
+- **The Linux network binding is unverified.** On Linux, `llama-server` is bound to the container
+  bridge address so containers can reach it and the LAN can't. CI runs the stack on Linux only
+  with a stub model, so that binding has never been checked on real hardware. Until it has, check
+  from another machine that ports 8080 and 8081 don't answer.
 
-Reviewed for release 0.1.0.
+Reviewed for release 0.2.0. Changes since 0.1.0: the `replace_in_file` edit tool and its `.git`
+and symlink protection, the OpenCode lockdown, and `workspace prepare`.

@@ -1,0 +1,405 @@
+# E3: the full stack with a stub model, with the overlays and smoke test CI runs (fresh volumes)
+
+$ docker compose -f docker-compose.yml -f tests/smoke/compose.stub-llm.yml -f tests/smoke/compose.fixtures.yml up -d --build --wait --wait-timeout 300
+ Image aegis-local/code-worker:dev Building
+ Image aegis-local/math-physics-mcp:dev Building
+ Image aegis-local/mcp-guard-proxy:dev Building
+ Image aegis-local/writing-auditor:dev Building
+ Image aegis-local/model-router:dev Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.97kB done
+#1 DONE 0.0s
+
+#2 [writing-auditor internal] load build definition from Dockerfile
+#2 transferring dockerfile: 414B done
+#2 DONE 0.0s
+
+#3 [mcp-guard-proxy internal] load build definition from Dockerfile
+#3 transferring dockerfile: 487B done
+#3 DONE 0.0s
+
+#4 [model-router internal] load build definition from Dockerfile
+#4 transferring dockerfile: 425B done
+#4 DONE 0.1s
+
+#5 [math-physics-mcp internal] load build definition from Dockerfile
+#5 transferring dockerfile: 352B done
+#5 DONE 0.1s
+
+#6 [code-worker internal] load build definition from Dockerfile
+#6 transferring dockerfile: 780B done
+#6 DONE 0.1s
+
+#7 [code-worker internal] load metadata for docker.io/library/python:3.15-slim
+#7 DONE 0.1s
+
+#8 [model-router internal] load .dockerignore
+#8 transferring context: 2B done
+#8 DONE 0.0s
+
+#9 [mcp-guard-proxy internal] load .dockerignore
+#9 transferring context: 2B done
+#9 DONE 0.0s
+
+#10 [math-physics-mcp internal] load .dockerignore
+#10 transferring context: 2B done
+#10 DONE 0.1s
+
+#11 [code-worker internal] load .dockerignore
+#11 transferring context: 2B done
+#11 DONE 0.1s
+
+#12 [writing-auditor internal] load .dockerignore
+#12 transferring context: 2B done
+#12 DONE 0.1s
+
+#13 [math-physics-mcp internal] load build context
+#13 transferring context: 97B done
+#13 DONE 0.0s
+
+#14 [writing-auditor 1/6] FROM docker.io/library/python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928
+#14 resolve docker.io/library/python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928 0.0s done
+#14 DONE 0.1s
+
+#15 [model-router internal] load build context
+#15 transferring context: 194B done
+#15 DONE 0.1s
+
+#16 [mcp-guard-proxy internal] load build context
+#16 transferring context: 404B done
+#16 DONE 0.1s
+
+#17 [code-worker internal] load build context
+#17 transferring context: 96B done
+#17 DONE 0.1s
+
+#18 [mcp-guard-proxy 2/6] RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin aegis  && mkdir -p /data && chown 10001:10001 /data
+#18 CACHED
+
+#19 [mcp-guard-proxy 3/6] WORKDIR /app
+#19 CACHED
+
+#20 [mcp-guard-proxy 5/6] RUN pip install --no-cache-dir -r requirements.txt
+#20 CACHED
+
+#21 [mcp-guard-proxy 4/6] COPY requirements.txt .
+#21 CACHED
+
+#22 [model-router 4/6] COPY requirements.txt .
+#22 CACHED
+
+#23 [model-router 5/6] RUN pip install --no-cache-dir -r requirements.txt
+#23 CACHED
+
+#24 [model-router 6/6] COPY aegis_router ./aegis_router
+#24 CACHED
+
+#25 [mcp-guard-proxy 6/6] COPY aegis_guard ./aegis_guard
+#25 CACHED
+
+#26 [code-worker 2/6] RUN apt-get update  && apt-get install -y --no-install-recommends git  && rm -rf /var/lib/apt/lists/*  && useradd --uid 10001 --create-home --shell /usr/sbin/nologin aegis  && mkdir -p /workspace /venv /cache && chown 10001:10001 /workspace /venv /cache
+#26 CACHED
+
+#27 [code-worker 3/6] WORKDIR /app
+#27 CACHED
+
+#28 [code-worker 5/6] RUN pip install --no-cache-dir -r requirements.txt
+#28 CACHED
+
+#29 [code-worker 4/6] COPY requirements.txt .
+#29 CACHED
+
+#30 [code-worker 6/6] COPY server.py prepare.py ./
+#30 CACHED
+
+#31 [model-router 2/6] RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin aegis
+#31 CACHED
+
+#32 [model-router 3/6] WORKDIR /app
+#32 CACHED
+
+#33 [math-physics-mcp 4/6] COPY requirements.txt .
+#33 CACHED
+
+#34 [math-physics-mcp 5/6] RUN pip install --no-cache-dir -r requirements.txt
+#34 CACHED
+
+#35 [math-physics-mcp 6/6] COPY mathcore.py server.py ./
+#35 CACHED
+
+#36 [mcp-guard-proxy] exporting to image
+#36 exporting layers
+#36 ...
+
+#37 [writing-auditor internal] load build context
+#37 transferring context: 94B done
+#37 DONE 0.0s
+
+#38 [writing-auditor 5/6] RUN pip install --no-cache-dir -r requirements.txt
+#38 CACHED
+
+#39 [writing-auditor 4/6] COPY requirements.txt .
+#39 CACHED
+
+#18 [writing-auditor 2/6] RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin aegis  && mkdir -p /data && chown 10001:10001 /data
+#18 CACHED
+
+#19 [writing-auditor 3/6] WORKDIR /app
+#19 CACHED
+
+#40 [writing-auditor 6/6] COPY vault.py server.py ./
+#40 CACHED
+
+#36 [mcp-guard-proxy] exporting to image
+#36 exporting layers done
+#36 exporting manifest sha256:e497072ab46b99096557cfed24e78c5edc89b328d184899511c90670d8084f2c 0.0s done
+#36 exporting config sha256:b89a9152d5b1c3f84bc7aa3facefd3b90eea2b31784ea92393b2ce67b1e9acae 0.0s done
+#36 exporting attestation manifest sha256:5136225bc8d535a60de26909490b66093e8e17b588640c2fd8a62f6d079663ae
+#36 exporting attestation manifest sha256:5136225bc8d535a60de26909490b66093e8e17b588640c2fd8a62f6d079663ae 0.2s done
+#36 exporting manifest list sha256:847ba324253ea29e8924c3824ad241922d017b8d20e5439af752e665e28d9c21
+#36 exporting manifest list sha256:847ba324253ea29e8924c3824ad241922d017b8d20e5439af752e665e28d9c21 0.1s done
+#36 naming to docker.io/aegis-local/mcp-guard-proxy:dev 0.0s done
+#36 unpacking to docker.io/aegis-local/mcp-guard-proxy:dev
+#36 unpacking to docker.io/aegis-local/mcp-guard-proxy:dev 0.1s done
+#36 DONE 0.6s
+
+#41 [model-router] exporting to image
+#41 exporting layers done
+#41 exporting manifest sha256:0efe26261b1b55a71afbbff6b634a08ad8152e02985cd968f1fd16856d39353b done
+#41 exporting config sha256:d16b80ab31ffd430f5504c96ac80a6a28d9118989a71328f37e61e149129d173 0.0s done
+#41 exporting attestation manifest sha256:b562b38d5987ffcdc81ac73cf333f8c19073cca484f472018bbe45895a104378 0.2s done
+#41 exporting manifest list sha256:dff15b05cac43011cc5c2f4bb3995810218fe1d4251ddceb07db9e7c4f9add88 0.1s done
+#41 naming to docker.io/aegis-local/model-router:dev 0.0s done
+#41 unpacking to docker.io/aegis-local/model-router:dev 0.1s done
+#41 DONE 0.6s
+
+#42 [code-worker] exporting to image
+#42 exporting layers done
+#42 exporting manifest sha256:5b2a2d34ac3bb348b20ad9e224e95dc3bc035fc77954564eb44f77b68a0e887a 0.0s done
+#42 exporting config sha256:40d73c8f32b16fb761649a02698a9cc9d3602c3b8534078aba13618d0b004d58 0.0s done
+#42 exporting attestation manifest sha256:e001dbb052cc4fd39d6f2669084df1671d5ba2fc7e34c4ea23be87729122a41f 0.2s done
+#42 exporting manifest list sha256:0dc508756c9c94b19d7369a4c038b72014982c5ff77e7541b6e0f209543c06d2 0.1s done
+#42 naming to docker.io/aegis-local/code-worker:dev 0.0s done
+#42 unpacking to docker.io/aegis-local/code-worker:dev 0.1s done
+#42 DONE 0.6s
+
+#43 [math-physics-mcp] exporting to image
+#43 exporting layers done
+#43 exporting manifest sha256:3e63400ef4656a495bbfd8d4028d90993cb72000ef6e0630b09674aad0ced4eb 0.0s done
+#43 exporting config sha256:c602169ff49d7dcff4c152ed17c3361f42cbaf7df6237952c88d7c652047a6af 0.1s done
+#43 exporting attestation manifest sha256:9479627a50e33553c531cb9c9fa9e280b8371771e49c0d2693c4e2f7f9306ac2 0.2s done
+#43 exporting manifest list sha256:41a9767065bed4b3f2ec19e0ae26503fe700f31faa456a630798de658c855c99 0.1s done
+#43 naming to docker.io/aegis-local/math-physics-mcp:dev 0.1s done
+#43 unpacking to docker.io/aegis-local/math-physics-mcp:dev 0.0s done
+#43 DONE 0.6s
+
+#44 [writing-auditor] exporting to image
+#44 exporting layers done
+#44 exporting manifest sha256:6563c69ec079275de2d98b593b99bf68b5c41647b545cc06a0159792c4aa4ed6 0.1s done
+#44 exporting config sha256:0595058a712dafed07d55c209766a3c4cc7846d8f7453b8d265cf723c685f638 0.0s done
+#44 exporting attestation manifest sha256:79cc2efdfdce15786f3f7042f7132e1664d2af3b673cab67c3c2586c7e05ca39 0.1s done
+#44 exporting manifest list sha256:50b618eb24ccbe10a0f9ae8906beedb2f6cc8deae55fd2aa2be390630b470813 0.1s done
+#44 naming to docker.io/aegis-local/writing-auditor:dev 0.0s done
+#44 unpacking to docker.io/aegis-local/writing-auditor:dev 0.0s done
+#44 DONE 0.6s
+
+#45 [model-router] resolving provenance for metadata file
+#45 ...
+
+#46 [mcp-guard-proxy] resolving provenance for metadata file
+#46 DONE 0.2s
+
+#45 [model-router] resolving provenance for metadata file
+#45 DONE 0.3s
+
+#47 [math-physics-mcp] resolving provenance for metadata file
+#47 DONE 0.2s
+
+#48 [code-worker] resolving provenance for metadata file
+#48 DONE 0.1s
+
+#49 [writing-auditor] resolving provenance for metadata file
+#49 DONE 0.0s
+ Image aegis-local/writing-auditor:dev Built
+ Image aegis-local/code-worker:dev Built
+ Image aegis-local/math-physics-mcp:dev Built
+ Image aegis-local/model-router:dev Built
+ Image aegis-local/mcp-guard-proxy:dev Built
+ Network aegis-local_control Creating
+ Network aegis-local_sandbox-math Creating
+ Network aegis-local_control Creating
+ Volume aegis-local_aegis-workspace Creating
+ Volume aegis-local_aegis-workspace Creating
+ Volume aegis-local_writing-index Creating
+ Volume aegis-local_writing-index Creating
+ Network aegis-local_sandbox-code Creating
+ Volume aegis-local_guard-data Creating
+ Volume aegis-local_guard-data Creating
+ Volume aegis-local_aegis-venv Creating
+ Volume aegis-local_aegis-venv Creating
+ Network aegis-local_sandbox-writing Creating
+ Network aegis-local_sandbox-fixture Creating
+ Network aegis-local_sandbox-writing Creating
+ Network aegis-local_sandbox-fixture Creating
+ Network aegis-local_sandbox-code Creating
+ Network aegis-local_sandbox-math Creating
+ Volume aegis-local_writing-index Created
+ Volume aegis-local_writing-index Created
+ Volume aegis-local_aegis-workspace Created
+ Volume aegis-local_aegis-workspace Created
+ Volume aegis-local_aegis-venv Created
+ Volume aegis-local_aegis-venv Created
+ Volume aegis-local_guard-data Created
+ Volume aegis-local_guard-data Created
+ Network aegis-local_control Created
+ Network aegis-local_control Created
+ Container aegis-local-stub-llm-1 Creating
+ Network aegis-local_sandbox-code Created
+ Network aegis-local_sandbox-code Created
+ Container aegis-local-code-worker-1 Creating
+ Network aegis-local_sandbox-math Created
+ Network aegis-local_sandbox-math Created
+ Container aegis-local-math-physics-mcp-1 Creating
+ Network aegis-local_sandbox-writing Created
+ Network aegis-local_sandbox-writing Created
+ Container aegis-local-writing-auditor-1 Creating
+ Network aegis-local_sandbox-fixture Created
+ Network aegis-local_sandbox-fixture Created
+ Container aegis-local-stub-llm-1 Created
+ Container aegis-local-model-router-1 Creating
+ Container aegis-local-math-physics-mcp-1 Created
+ Container aegis-local-fixture-github-1 Creating
+ Container aegis-local-code-worker-1 Created
+ Container aegis-local-writing-auditor-1 Created
+ Container aegis-local-model-router-1 Created
+ Container aegis-local-fixture-github-1 Created
+ Container aegis-local-mcp-guard-proxy-1 Creating
+ Container aegis-local-mcp-guard-proxy-1 Created
+ Container aegis-local-math-physics-mcp-1 Starting
+ Container aegis-local-writing-auditor-1 Starting
+ Container aegis-local-code-worker-1 Starting
+ Container aegis-local-stub-llm-1 Starting
+ Container aegis-local-math-physics-mcp-1 Started
+ Container aegis-local-fixture-github-1 Starting
+ Container aegis-local-writing-auditor-1 Started
+ Container aegis-local-code-worker-1 Started
+ Container aegis-local-stub-llm-1 Started
+ Container aegis-local-model-router-1 Starting
+ Container aegis-local-fixture-github-1 Started
+ Container aegis-local-model-router-1 Started
+ Container aegis-local-mcp-guard-proxy-1 Starting
+ Container aegis-local-mcp-guard-proxy-1 Started
+ Container aegis-local-fixture-github-1 Waiting
+ Container aegis-local-model-router-1 Waiting
+ Container aegis-local-code-worker-1 Waiting
+ Container aegis-local-math-physics-mcp-1 Waiting
+ Container aegis-local-mcp-guard-proxy-1 Waiting
+ Container aegis-local-writing-auditor-1 Waiting
+ Container aegis-local-stub-llm-1 Waiting
+ Container aegis-local-fixture-github-1 Healthy
+ Container aegis-local-stub-llm-1 Healthy
+ Container aegis-local-math-physics-mcp-1 Healthy
+ Container aegis-local-writing-auditor-1 Healthy
+ Container aegis-local-code-worker-1 Healthy
+ Container aegis-local-model-router-1 Healthy
+ Container aegis-local-mcp-guard-proxy-1 Healthy
+[exit 0]
+
+$ python tests/smoke/smoke.py --client-token <client token> --admin-token <admin token> --compose "docker compose -f docker-compose.yml -f tests/smoke/compose.stub-llm.yml -f tests/smoke/compose.fixtures.yml"
+router
+  [ ok ] lists aliases
+  [ ok ] aegis-fast answers (via tier0)
+  [ ok ] aegis-reasoner answers (via tier1)
+  [ ok ] tiers healthy
+  [ ok ] aegis-extractor (tier0) JSON valid 3/3 (0s)
+guard
+  [ ok ] rejects calls without a token
+  [ ok ] admin API rejects the client token
+  [ ok ] lists prefixed tools from every worker
+  [ ok ] hides denied tools
+math worker
+  [ ok ] solves exactly
+  [ ok ] converts units
+  [ ok ] stops a runaway computation (3.0s)
+  [ ok ] simplifies exactly
+writing auditor
+  [ ok ] indexes the vault
+  [ ok ] finds a passage
+  [ ok ] verifies a real quote
+  [ ok ] rejects an invented quote
+code worker
+  [ ok ] answers (empty workspace)
+prompt injection
+  [ ok ] untrusted output is quarantined
+  [ ok ] raw issue text is not passed on
+  [ ok ] caller gets only the structured extraction
+  [ ok ] injected instruction is not passed on
+  [ ok ] session is tainted
+  [ ok ] mutating call is held
+  [ ok ] approval is pending with its taint source
+  [ ok ] approved call passes the hold once
+  [ ok ] approval is single-use
+circuit breaker
+  [ ok ] trips on a repeated failing call
+sandbox isolation
+  [ ok ] code-worker can't reach internet, router, peers, or its root fs
+  [ ok ] math-physics-mcp can't reach internet, router, peers, or its root fs
+  [ ok ] writing-auditor can't reach internet, router, peers, or its root fs
+workspace prepare
+  [ ok ] prepare can't reach the stack, the repository, tokens, or its root fs
+  [ ok ] prepare refuses pip options
+  [ ok ] prepare installs a wheel
+  [ ok ] the worker imports what prepare installed
+  [ ok ] the worker can't change the prepared environment
+
+all smoke checks passed
+[exit 0]
+
+$ docker compose -f docker-compose.yml -f tests/smoke/compose.stub-llm.yml -f tests/smoke/compose.fixtures.yml down -v --remove-orphans
+ Container aegis-local-mcp-guard-proxy-1 Stopping
+ Container aegis-local-mcp-guard-proxy-1 Stopped
+ Container aegis-local-mcp-guard-proxy-1 Removing
+ Container aegis-local-mcp-guard-proxy-1 Removed
+ Container aegis-local-writing-auditor-1 Stopping
+ Container aegis-local-fixture-github-1 Stopping
+ Container aegis-local-code-worker-1 Stopping
+ Container aegis-local-model-router-1 Stopping
+ Container aegis-local-code-worker-1 Stopped
+ Container aegis-local-code-worker-1 Removing
+ Container aegis-local-code-worker-1 Removed
+ Container aegis-local-model-router-1 Stopped
+ Container aegis-local-model-router-1 Removing
+ Container aegis-local-model-router-1 Removed
+ Container aegis-local-stub-llm-1 Stopping
+ Container aegis-local-writing-auditor-1 Stopped
+ Container aegis-local-writing-auditor-1 Removing
+ Container aegis-local-writing-auditor-1 Removed
+ Container aegis-local-fixture-github-1 Stopped
+ Container aegis-local-fixture-github-1 Removing
+ Container aegis-local-fixture-github-1 Removed
+ Container aegis-local-math-physics-mcp-1 Stopping
+ Container aegis-local-math-physics-mcp-1 Stopped
+ Container aegis-local-math-physics-mcp-1 Removing
+ Container aegis-local-math-physics-mcp-1 Removed
+ Container aegis-local-stub-llm-1 Stopped
+ Container aegis-local-stub-llm-1 Removing
+ Container aegis-local-stub-llm-1 Removed
+ Network aegis-local_sandbox-code Removing
+ Volume aegis-local_writing-index Removing
+ Network aegis-local_sandbox-writing Removing
+ Network aegis-local_sandbox-fixture Removing
+ Volume aegis-local_aegis-workspace Removing
+ Volume aegis-local_aegis-venv Removing
+ Volume aegis-local_guard-data Removing
+ Network aegis-local_control Removing
+ Network aegis-local_sandbox-math Removing
+ Volume aegis-local_aegis-workspace Removed
+ Volume aegis-local_guard-data Removed
+ Volume aegis-local_writing-index Removed
+ Volume aegis-local_aegis-venv Removed
+ Network aegis-local_sandbox-code Removed
+ Network aegis-local_sandbox-fixture Removed
+ Network aegis-local_sandbox-writing Removed
+ Network aegis-local_control Removed
+ Network aegis-local_sandbox-math Removed
+[exit 0]

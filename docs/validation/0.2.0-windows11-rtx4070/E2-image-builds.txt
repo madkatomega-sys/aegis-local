@@ -1,0 +1,294 @@
+# E2: every image builds; Python version and user inside each
+
+$ docker compose build
+ Image aegis-local/code-worker:dev Building
+ Image aegis-local/math-physics-mcp:dev Building
+ Image aegis-local/writing-auditor:dev Building
+ Image aegis-local/model-router:dev Building
+ Image aegis-local/mcp-guard-proxy:dev Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.97kB done
+#1 DONE 0.0s
+
+#2 [code-worker internal] load build definition from Dockerfile
+#2 transferring dockerfile: 780B done
+#2 DONE 0.0s
+
+#3 [math-physics-mcp internal] load build definition from Dockerfile
+#3 transferring dockerfile: 352B done
+#3 DONE 0.0s
+
+#4 [writing-auditor internal] load build definition from Dockerfile
+#4 transferring dockerfile: 414B done
+#4 DONE 0.1s
+
+#5 [model-router internal] load build definition from Dockerfile
+#5 transferring dockerfile: 425B done
+#5 DONE 0.1s
+
+#6 [writing-auditor internal] load metadata for docker.io/library/python:3.15-slim
+#6 DONE 0.1s
+
+#7 [math-physics-mcp internal] load .dockerignore
+#7 DONE 0.0s
+
+#8 [writing-auditor internal] load .dockerignore
+#8 transferring context: 2B done
+#8 DONE 0.0s
+
+#9 [mcp-guard-proxy internal] load build definition from Dockerfile
+#9 transferring dockerfile: 487B done
+#9 DONE 0.1s
+
+#6 [mcp-guard-proxy internal] load metadata for docker.io/library/python:3.15-slim
+#6 DONE 0.1s
+
+#10 [code-worker internal] load .dockerignore
+#10 transferring context: 2B done
+#10 DONE 0.1s
+
+#7 [math-physics-mcp internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.1s
+
+#11 [math-physics-mcp internal] load build context
+#11 transferring context: 97B done
+#11 DONE 0.1s
+
+#12 [model-router 1/6] FROM docker.io/library/python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928
+#12 resolve docker.io/library/python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928 0.0s done
+#12 DONE 0.0s
+
+#13 [mcp-guard-proxy internal] load .dockerignore
+#13 transferring context: 2B done
+#13 DONE 0.1s
+
+#14 [model-router internal] load .dockerignore
+#14 transferring context: 2B done
+#14 DONE 0.1s
+
+#15 [writing-auditor internal] load build context
+#15 transferring context: 94B done
+#15 DONE 0.1s
+
+#16 [code-worker internal] load build context
+#16 transferring context: 24.16kB done
+#16 DONE 0.1s
+
+#17 [code-worker 5/6] RUN pip install --no-cache-dir -r requirements.txt
+#17 CACHED
+
+#18 [code-worker 3/6] WORKDIR /app
+#18 CACHED
+
+#19 [code-worker 4/6] COPY requirements.txt .
+#19 CACHED
+
+#20 [code-worker 2/6] RUN apt-get update  && apt-get install -y --no-install-recommends git  && rm -rf /var/lib/apt/lists/*  && useradd --uid 10001 --create-home --shell /usr/sbin/nologin aegis  && mkdir -p /workspace /venv /cache && chown 10001:10001 /workspace /venv /cache
+#20 CACHED
+
+#21 [writing-auditor 3/6] WORKDIR /app
+#21 CACHED
+
+#22 [writing-auditor 4/6] COPY requirements.txt .
+#22 CACHED
+
+#23 [writing-auditor 5/6] RUN pip install --no-cache-dir -r requirements.txt
+#23 CACHED
+
+#24 [writing-auditor 2/6] RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin aegis  && mkdir -p /data && chown 10001:10001 /data
+#24 CACHED
+
+#25 [writing-auditor 6/6] COPY vault.py server.py ./
+#25 CACHED
+
+#26 [math-physics-mcp 5/6] RUN pip install --no-cache-dir -r requirements.txt
+#26 CACHED
+
+#27 [math-physics-mcp 4/6] COPY requirements.txt .
+#27 CACHED
+
+#28 [math-physics-mcp 3/6] WORKDIR /app
+#28 CACHED
+
+#29 [math-physics-mcp 2/6] RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin aegis
+#29 CACHED
+
+#30 [math-physics-mcp 6/6] COPY mathcore.py server.py ./
+#30 CACHED
+
+#31 [code-worker 6/6] COPY server.py prepare.py ./
+#31 CACHED
+
+#32 [code-worker] exporting to image
+#32 exporting layers
+#32 ...
+
+#33 [mcp-guard-proxy internal] load build context
+#33 transferring context: 472B done
+#33 DONE 0.0s
+
+#34 [model-router internal] load build context
+#34 transferring context: 259B done
+#34 DONE 0.0s
+
+#21 [mcp-guard-proxy 3/6] WORKDIR /app
+#21 CACHED
+
+#35 [mcp-guard-proxy 4/6] COPY requirements.txt .
+#35 CACHED
+
+#24 [mcp-guard-proxy 2/6] RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin aegis  && mkdir -p /data && chown 10001:10001 /data
+#24 CACHED
+
+#36 [mcp-guard-proxy 5/6] RUN pip install --no-cache-dir -r requirements.txt
+#36 CACHED
+
+#37 [model-router 4/6] COPY requirements.txt .
+#37 CACHED
+
+#29 [model-router 2/6] RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin aegis
+#29 CACHED
+
+#28 [model-router 3/6] WORKDIR /app
+#28 CACHED
+
+#38 [model-router 5/6] RUN pip install --no-cache-dir -r requirements.txt
+#38 CACHED
+
+#32 [code-worker] exporting to image
+#32 exporting layers done
+#32 exporting manifest sha256:5b2a2d34ac3bb348b20ad9e224e95dc3bc035fc77954564eb44f77b68a0e887a 0.0s done
+#32 exporting config sha256:40d73c8f32b16fb761649a02698a9cc9d3602c3b8534078aba13618d0b004d58 0.0s done
+#32 exporting attestation manifest sha256:7600195f7f39407929235941362e108167967bb3cdf5408361f0d4e18f04c426
+#32 ...
+
+#39 [mcp-guard-proxy 6/6] COPY aegis_guard ./aegis_guard
+#39 DONE 0.3s
+
+#32 [code-worker] exporting to image
+#32 exporting attestation manifest sha256:7600195f7f39407929235941362e108167967bb3cdf5408361f0d4e18f04c426 0.1s done
+#32 exporting manifest list sha256:b3ca3532871113d04e977d3712946f9d9c6ab0d9aee10113c11281482dbbfecd
+#32 ...
+
+#40 [model-router 6/6] COPY aegis_router ./aegis_router
+#40 DONE 0.3s
+
+#32 [code-worker] exporting to image
+#32 exporting manifest list sha256:b3ca3532871113d04e977d3712946f9d9c6ab0d9aee10113c11281482dbbfecd 0.1s done
+#32 naming to docker.io/aegis-local/code-worker:dev 0.0s done
+#32 unpacking to docker.io/aegis-local/code-worker:dev 0.1s done
+#32 DONE 0.5s
+
+#41 [math-physics-mcp] exporting to image
+#41 exporting layers done
+#41 exporting manifest sha256:3e63400ef4656a495bbfd8d4028d90993cb72000ef6e0630b09674aad0ced4eb 0.0s done
+#41 exporting config sha256:c602169ff49d7dcff4c152ed17c3361f42cbaf7df6237952c88d7c652047a6af done
+#41 exporting attestation manifest sha256:c6f8d7d992ffd57c7ff5c73dd48f46da92871c0959fe519799448c402ca92f36 0.1s done
+#41 exporting manifest list sha256:d5572ce8cb43747d1892e880b1fbbaf6e23590f926696ffa836df404ffb6953d 0.1s done
+#41 naming to docker.io/aegis-local/math-physics-mcp:dev 0.0s done
+#41 unpacking to docker.io/aegis-local/math-physics-mcp:dev 0.1s done
+#41 DONE 0.5s
+
+#42 [writing-auditor] exporting to image
+#42 exporting layers done
+#42 exporting manifest sha256:6563c69ec079275de2d98b593b99bf68b5c41647b545cc06a0159792c4aa4ed6 done
+#42 exporting config sha256:0595058a712dafed07d55c209766a3c4cc7846d8f7453b8d265cf723c685f638 0.0s done
+#42 exporting attestation manifest sha256:e5fb5400094cab9817bd9ca83ddfa8e9eed5e188d762382ea97869d10c1920af 0.1s done
+#42 exporting manifest list sha256:18af7770c9a30b5dc0c683b7f8b0f71b90885621a7b27fccc07caad95b98da4b 0.1s done
+#42 naming to docker.io/aegis-local/writing-auditor:dev 0.0s done
+#42 unpacking to docker.io/aegis-local/writing-auditor:dev 0.0s done
+#42 DONE 0.5s
+
+#43 [model-router] exporting to image
+#43 exporting layers 0.6s done
+#43 exporting manifest sha256:0efe26261b1b55a71afbbff6b634a08ad8152e02985cd968f1fd16856d39353b 0.0s done
+#43 exporting config sha256:d16b80ab31ffd430f5504c96ac80a6a28d9118989a71328f37e61e149129d173
+#43 exporting config sha256:d16b80ab31ffd430f5504c96ac80a6a28d9118989a71328f37e61e149129d173 0.0s done
+#43 exporting attestation manifest sha256:f237e3bd991cebe906da26998676ee6e2ccd6ce15ed1f183e5c84c9a7f8207b3
+#43 exporting attestation manifest sha256:f237e3bd991cebe906da26998676ee6e2ccd6ce15ed1f183e5c84c9a7f8207b3 0.1s done
+#43 exporting manifest list sha256:ae4ee54245c0e58cf9497a7fd95fe00a90e3e92765d90236106c50f68cc56500
+#43 exporting manifest list sha256:ae4ee54245c0e58cf9497a7fd95fe00a90e3e92765d90236106c50f68cc56500 0.1s done
+#43 naming to docker.io/aegis-local/model-router:dev 0.0s done
+#43 unpacking to docker.io/aegis-local/model-router:dev
+#43 unpacking to docker.io/aegis-local/model-router:dev 0.1s done
+#43 DONE 1.0s
+
+#44 [mcp-guard-proxy] exporting to image
+#44 exporting layers 0.5s done
+#44 exporting manifest sha256:e497072ab46b99096557cfed24e78c5edc89b328d184899511c90670d8084f2c 0.0s done
+#44 exporting config sha256:b89a9152d5b1c3f84bc7aa3facefd3b90eea2b31784ea92393b2ce67b1e9acae 0.1s done
+#44 exporting attestation manifest sha256:dfa9a8060cfa3f30b967bfd7d9b8680c9f8d721449861fbbf1ddb4fad707c5a1 0.1s done
+#44 exporting manifest list sha256:392dc93970c17f0ae93ff406365d2e91d9d9a388faff7cf5fffd2e92cbe9b527 0.1s done
+#44 naming to docker.io/aegis-local/mcp-guard-proxy:dev 0.0s done
+#44 unpacking to docker.io/aegis-local/mcp-guard-proxy:dev 0.1s done
+#44 DONE 1.0s
+
+#45 [code-worker] resolving provenance for metadata file
+#45 DONE 0.2s
+
+#46 [writing-auditor] resolving provenance for metadata file
+#46 DONE 0.2s
+
+#47 [math-physics-mcp] resolving provenance for metadata file
+#47 DONE 0.1s
+
+#48 [mcp-guard-proxy] resolving provenance for metadata file
+#48 DONE 0.1s
+
+#49 [model-router] resolving provenance for metadata file
+#49 DONE 0.0s
+ Image aegis-local/model-router:dev Built
+ Image aegis-local/writing-auditor:dev Built
+ Image aegis-local/code-worker:dev Built
+ Image aegis-local/math-physics-mcp:dev Built
+ Image aegis-local/mcp-guard-proxy:dev Built
+[exit 0]
+
+$ docker run --rm --entrypoint python aegis-local/model-router:dev -c import os, sys; print('model-router', sys.version.split()[0], 'uid', os.getuid())
+model-router 3.15.2 uid 10001
+[exit 0]
+
+$ docker run --rm --entrypoint python aegis-local/mcp-guard-proxy:dev -c import os, sys; print('mcp-guard-proxy', sys.version.split()[0], 'uid', os.getuid())
+mcp-guard-proxy 3.15.2 uid 10001
+[exit 0]
+
+$ docker run --rm --entrypoint python aegis-local/code-worker:dev -c import os, sys; print('code-worker', sys.version.split()[0], 'uid', os.getuid())
+code-worker 3.15.2 uid 10001
+[exit 0]
+
+$ docker run --rm --entrypoint python aegis-local/math-physics-mcp:dev -c import os, sys; print('math-physics-mcp', sys.version.split()[0], 'uid', os.getuid())
+math-physics-mcp 3.15.2 uid 10001
+[exit 0]
+
+$ docker run --rm --entrypoint python aegis-local/writing-auditor:dev -c import os, sys; print('writing-auditor', sys.version.split()[0], 'uid', os.getuid())
+writing-auditor 3.15.2 uid 10001
+[exit 0]
+
+$ docker run --rm --entrypoint ls aegis-local/code-worker:dev -la /app /venv /cache
+ls: cannot access 'C:/Program Files/Git/app': No such file or directory
+ls: cannot access 'C:/Program Files/Git/venv': No such file or directory
+ls: cannot access 'C:/Program Files/Git/cache': No such file or directory
+[exit 2]
+
+# The code worker image's /app, /venv and /cache (added: Git Bash had rewritten the paths in the first run)
+
+$ docker run --rm --entrypoint ls aegis-local/code-worker:dev -la /app /venv /cache
+/app:
+total 40
+drwxr-xr-x 1 root root  4096 Nov 17 19:43 .
+drwxr-xr-x 1 root root  4096 Nov 17 20:40 ..
+-rwxr-xr-x 1 root root  9391 Nov 17 19:40 prepare.py
+-rwxr-xr-x 1 root root    61 Nov 14 03:39 requirements.txt
+-rwxr-xr-x 1 root root 14651 Nov 17 19:36 server.py
+
+/cache:
+total 8
+drwxr-xr-x 2 aegis aegis 4096 Nov 17 19:37 .
+drwxr-xr-x 1 root  root  4096 Nov 17 20:40 ..
+
+/venv:
+total 8
+drwxr-xr-x 2 aegis aegis 4096 Nov 17 19:37 .
+drwxr-xr-x 1 root  root  4096 Nov 17 20:40 ..
+[exit 0]
