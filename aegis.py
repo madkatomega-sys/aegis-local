@@ -14,6 +14,8 @@ Standard library only, so a fresh machine needs nothing but Python 3.11+ to run 
     python aegis.py approve ID | deny ID        decide a held call
     python aegis.py reset SESSION               clear a tripped circuit breaker
     python aegis.py workspace load PATH         copy a repository's HEAD into the sandbox
+    python aegis.py workspace prepare [--requirements FILE] [--allow-source-builds]
+                                                install the loaded project's dependencies (wheels only)
     python aegis.py workspace export            write the sandbox's changes to exports/*.patch
     python aegis.py opencode [PROJECT]          start OpenCode wired to the harness
     python aegis.py env                         print shell lines that export the client token
@@ -196,14 +198,19 @@ def image_settings(pull: bool) -> dict[str, str]:
 
 
 def compose(
-    runtime: str, *args: str, env: dict[str, str], capture: bool = False, text: bool = True
+    runtime: str,
+    *args: str,
+    env: dict[str, str],
+    capture: bool = False,
+    text: bool = True,
+    stdin: str | None = None,
 ) -> subprocess.CompletedProcess[Any]:
     """Run compose with the image choice recorded by the last `up`, so later commands use the same images.
 
     With `text=False` captured output stays bytes, so line endings survive (text mode turns CRLF into LF)."""
     cmd = [runtime, "compose", "-f", str(COMPOSE_FILE), *args]
     full = {**os.environ, **read_env_file(IMAGES), **env}
-    return subprocess.run(cmd, env=full, cwd=ROOT, text=text, capture_output=capture, check=False)
+    return subprocess.run(cmd, env=full, cwd=ROOT, text=text, capture_output=capture, input=stdin, check=False)
 
 
 def llama_bind_host(cfg: dict[str, str], runtime: str | None) -> str:
@@ -520,6 +527,32 @@ def workspace_diff(runtime: str, env: dict[str, str]) -> bytes:
     return result.stdout
 
 
+def workspace_prepare(
+    runtime: str, env: dict[str, str], requirement_files: list[str], allow_source_builds: bool
+) -> int:
+    """Install the loaded project's declared dependencies where the code worker's checks can use them.
+
+    Two containers, so none has both the repository and the network: the code worker (no network)
+    reads the dependency list out of the repository, then workspace-prepare (network, no
+    repository) installs that list into the aegis-venv volume, which the worker mounts read-only."""
+    collect = ["run", "--rm", "--no-deps", "--entrypoint", "python", "code-worker", "/app/prepare.py", "collect"]
+    collect += [f"--requirements={name}" for name in requirement_files]
+    found = compose(runtime, *collect, env=env, capture=True)
+    if found.returncode != 0:
+        print(found.stderr.strip().splitlines()[-1] if found.stderr.strip() else "could not read the workspace")
+        return found.returncode
+    sources: dict[str, list[str]] = json.loads(found.stdout.strip().splitlines()[-1])
+    if not any(sources.values()):
+        print("no dependencies declared (looked at requirements*.txt and pyproject.toml); clearing any old ones")
+    for name, lines in sources.items():
+        print(f"{name}: {', '.join(lines) or '(none)'}")
+    mode = "allowing source builds" if allow_source_builds else "wheels only"
+    print(f"installing into the sandbox's environment ({mode})")
+    install = ["run", "--rm", "--no-deps", "-T", "workspace-prepare", "install"]
+    install += ["--allow-source-builds"] if allow_source_builds else []
+    return compose(runtime, *install, env=env, stdin=json.dumps(sources)).returncode
+
+
 def cmd_workspace(args: argparse.Namespace) -> int:
     cfg = settings()
     runtime = detect_runtime(cfg) or die("no container runtime found")
@@ -531,7 +564,10 @@ def cmd_workspace(args: argparse.Namespace) -> int:
         code = workspace_load(runtime, env, source)
         if code == 0:
             print(f"loaded the committed HEAD of {source} into the sandbox (uncommitted changes are not copied)")
+            print("if its tests need packages, run: python aegis.py workspace prepare")
         return code
+    if args.action == "prepare":
+        return workspace_prepare(runtime, env, args.requirements or [], args.allow_source_builds)
     diff = workspace_diff(runtime, env)
     if not diff.strip():
         print("no changes in the sandbox")
@@ -597,6 +633,18 @@ def build_parser() -> argparse.ArgumentParser:
     load = ws.add_parser("load", help="copy a repository's committed HEAD into the sandbox")
     load.add_argument("path")
     ws.add_parser("export", help="write sandbox changes to exports/*.patch")
+    prepare = ws.add_parser("prepare", help="install the loaded project's dependencies for the sandbox's checks")
+    prepare.add_argument(
+        "--requirements",
+        action="append",
+        metavar="FILE",
+        help="a requirements file in the repository (repeatable; default: requirements*.txt and pyproject.toml)",
+    )
+    prepare.add_argument(
+        "--allow-source-builds",
+        action="store_true",
+        help="let pip build packages that have no wheel (runs their build scripts, with network access)",
+    )
     p.set_defaults(func=cmd_workspace)
 
     p = sub.add_parser("opencode", help="start OpenCode wired to the harness")

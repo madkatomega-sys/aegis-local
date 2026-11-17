@@ -76,6 +76,7 @@ class Fixture:
     description: str
     prompt: str
     crlf: bool
+    prepare: bool  # run `aegis.py workspace prepare` after loading, for the packages its tests import
 
 
 def load_fixtures() -> dict[str, Fixture]:
@@ -84,7 +85,12 @@ def load_fixtures() -> dict[str, Fixture]:
         data = tomllib.loads(spec.read_text(encoding="utf-8"))
         name = spec.parent.name
         fixtures[name] = Fixture(
-            name, spec.parent, data["description"], data.get("prompt", DEFAULT_PROMPT), bool(data.get("crlf"))
+            name,
+            spec.parent,
+            data["description"],
+            data.get("prompt", DEFAULT_PROMPT),
+            bool(data.get("crlf")),
+            bool(data.get("prepare")),
         )
     return fixtures
 
@@ -300,10 +306,18 @@ class Stack:
         self.standalone = (
             self.opencode_version.split(".")[0].isdigit() and int(self.opencode_version.split(".")[0]) >= 2
         )
+        # Whether the sandbox may hold prepared packages. Unknown at the start, so the first
+        # fixture that needs none clears whatever an earlier session left.
+        self.prepared = True
 
-    def load(self, source: Path) -> None:
+    def load(self, source: Path, prepare: bool) -> None:
         if aegis.workspace_load(self.runtime, self.env, source) != 0:
             raise RuntimeError(f"could not load {source} into the sandbox")
+        # Without prepare, the sandbox keeps the last prepared packages; a fixture that needs
+        # none gets them cleared, so one fixture's packages can't help another.
+        if (prepare or self.prepared) and aegis.workspace_prepare(self.runtime, self.env, [], False) != 0:
+            raise RuntimeError(f"could not install {source}'s dependencies in the sandbox")
+        self.prepared = prepare
 
     def diff(self) -> bytes:
         return aegis.workspace_diff(self.runtime, self.env)
@@ -404,7 +418,7 @@ def run_one(
     if work.exists():
         shutil.rmtree(work)
     materialize(fixture, work)
-    stack.load(work)
+    stack.load(work, fixture.prepare)
     first = stack.last_event() + 1
     command = [stack.opencode, "run", "--agent", "builder", *(["--standalone"] if stack.standalone else [])]
     started = datetime.now(UTC)

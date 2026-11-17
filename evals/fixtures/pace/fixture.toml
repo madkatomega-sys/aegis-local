@@ -1,0 +1,3 @@
+description = "One wrong unit: pace() converts to minutes per mile, not per kilometre. Its tests import pint, so the sandbox needs `workspace prepare` first."
+# Run `aegis.py workspace prepare` after loading, so the sandbox has the packages in requirements.txt.
+prepare = true

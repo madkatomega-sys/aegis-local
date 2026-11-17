@@ -54,7 +54,8 @@ Each run ends in one of four outcomes, which separate a wrong fix from an edit t
 ## Fixtures
 
 Each folder in `fixtures/` is one project:
-- `fixture.toml` holds a description, and optionally a `prompt` and `crlf = true`.
+- `fixture.toml` holds a description, and optionally a `prompt`, `crlf = true`, and
+  `prepare = true`.
 - `solution.patch` is the reference fix.
 - Everything else is the project itself.
 
@@ -68,11 +69,16 @@ starts from the same commit.
 | `median-crlf` | One wrong line in a file with CRLF line endings |
 | `cart` | Two bugs in two files |
 | `slug` | A missing module: the fix is a new file |
+| `pace` | One wrong unit, in a project whose tests import a package (`pint`): the sandbox needs `workspace prepare` |
 
 To add a fixture, create the folder with its tests and its bug, and write `solution.patch` against
 it. `tests/test_evals.py` picks it up and checks that the tests fail without the patch and pass
-with it. A fixture's tests may use only the standard library and `pytest`, because the sandbox
-can't install packages yet.
+with it.
+
+A fixture whose tests need packages lists them in its own `requirements.txt` and sets
+`prepare = true` in `fixture.toml`. The runner then runs `aegis.py workspace prepare` after each
+load, and clears the prepared packages before a fixture that needs none. Scoring runs the tests
+on the host, so add the packages to `requirements-dev.txt` too.
 
 ## Arms
 

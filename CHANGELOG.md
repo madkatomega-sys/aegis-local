@@ -39,6 +39,14 @@ All notable changes to this project are recorded here. The format follows
   runs, resumes an interrupted batch, and records the commit, OpenCode version, model files and
   GPU load with the results. `tests/test_evals.py` checks in CI that every fixture fails as given
   and passes with its reference fix.
+- `python aegis.py workspace prepare` installs the loaded project's dependencies, so the
+  sandbox's checks can run tests that import packages. The code worker reads them from
+  `requirements*.txt` and `pyproject.toml` (dependencies, dev/test extras and dependency groups).
+  A one-shot `workspace-prepare` container installs them into a separate `aegis-venv` volume,
+  which the worker mounts read-only. That container has network access but never sees the
+  repository, holds no tokens, and shares no network with the stack. It installs wheels only
+  unless `--allow-source-builds` is given, and refuses pip options, URLs, and paths. The CI smoke
+  test checks all of this against the real containers. A new eval fixture, `pace`, needs it.
 
 ### Changed
 
