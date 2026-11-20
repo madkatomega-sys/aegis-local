@@ -8,6 +8,17 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- A model helper, `python aegis.py models`:
+  - `suggest` detects the GPU and its memory (NVIDIA through `nvidia-smi`; AMD and Intel through
+    the Windows registry, or `/sys` and `lspci` on Linux) and the system RAM, and suggests a profile.
+  - `get` shows what it will download and asks first, checks the free disk space, downloads from
+    Hugging Face with resume, checks each file's size and SHA-256, and writes the profile and model
+    paths into `.env`. Files already present are checked, not fetched again.
+  - `list` shows the catalog, and `verify` re-checks the files `.env` points at.
+
+  The files come from a new catalog, `config/models.toml`, which pins each one by repository, file
+  name, size and SHA-256, and each profile names its two files with a `download` key. Only the
+  `nvidia-12gb` files are measured; the rest are the profiles' untested candidates.
 - `python aegis.py opencode --web [PROJECT]` opens OpenCode's browser interface on `127.0.0.1`:
   - with the Aegis config and plugins;
   - protected by a generated password, kept in `.aegis/tokens.env`;

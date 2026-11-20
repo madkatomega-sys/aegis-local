@@ -20,11 +20,15 @@ Standard library only, so a fresh machine needs nothing but Python 3.11+ to run 
     python aegis.py opencode [PROJECT]          start OpenCode wired to the harness
     python aegis.py opencode --web [PROJECT]    the same in OpenCode's browser interface (OpenCode 1.x)
     python aegis.py env                         print shell lines that export the client token
+    python aegis.py models suggest              detect the GPU and RAM; suggest a profile and its models
+    python aegis.py models get [--profile NAME] download the profile's models, check SHA-256, set .env
+    python aegis.py models list | verify        list the pinned model files; check the ones in .env
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import platform
@@ -50,6 +54,9 @@ LOGS = STATE / "logs"
 TOKENS = STATE / "tokens.env"
 IMAGES = STATE / "images.env"
 PROFILES = ROOT / "config" / "profiles"
+MODELS_FILE = ROOT / "config" / "models.toml"
+MODELS_DIR = ROOT / "models"  # ignored by Git
+HUGGING_FACE = "https://huggingface.co"
 COMPOSE_FILE = ROOT / "docker-compose.yml"
 ROUTER = "http://127.0.0.1:4000"
 GUARD = "http://127.0.0.1:4100"
@@ -188,6 +195,300 @@ def validate_profile(profile: dict[str, Any]) -> list[str]:
 
 def model_path(cfg: dict[str, str], profile: dict[str, Any], tier: str) -> str:
     return cfg.get(f"AEGIS_{tier.upper()}_MODEL") or profile["tiers"][tier].get("model", "")
+
+
+# -- models: detect the hardware, suggest a profile, fetch its model files --------------------
+
+
+def load_catalog() -> dict[str, dict[str, Any]]:
+    """config/models.toml: model files pinned by size and SHA-256."""
+    return tomllib.loads(MODELS_FILE.read_text(encoding="utf-8"))["models"]
+
+
+def gpu_vendor(name: str) -> str | None:
+    lowered = name.lower()
+    if "nvidia" in lowered or "geforce" in lowered or "quadro" in lowered or "rtx" in lowered:
+        return "nvidia"
+    if "amd" in lowered or "radeon" in lowered:
+        return "amd"
+    if "intel" in lowered and "arc" in lowered:
+        return "intel"
+    return None  # integrated Intel graphics and anything unknown: not a profile target
+
+
+def parse_nvidia_smi(text: str) -> list[dict[str, Any]]:
+    """`nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits` lines: name, MiB."""
+    gpus = []
+    for line in text.strip().splitlines():
+        name, _, memory = line.rpartition(",")
+        if name.strip() and memory.strip().isdigit():
+            gpus.append({"vendor": "nvidia", "name": name.strip(), "memory_gb": round(int(memory) / 1024, 1)})
+    return gpus
+
+
+def parse_adapters(text: str) -> list[dict[str, Any]]:
+    """`name|bytes` lines (Windows display-adapter registry, Linux sysfs): any vendor, memory if known."""
+    gpus = []
+    for line in text.strip().splitlines():
+        name, _, size = line.partition("|")
+        vendor = gpu_vendor(name)
+        if vendor:
+            memory = round(int(size) / 2**30, 1) if size.strip().isdigit() and int(size) > 0 else None
+            gpus.append({"vendor": vendor, "name": name.strip(), "memory_gb": memory})
+    return gpus
+
+
+def detect_gpus() -> list[dict[str, Any]]:
+    gpus: list[dict[str, Any]] = []
+    if shutil.which("nvidia-smi"):
+        query = ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"]
+        gpus += parse_nvidia_smi(subprocess.run(query, capture_output=True, text=True, check=False).stdout)
+    if IS_WINDOWS:
+        # The driver records each adapter's dedicated memory in the registry; WMI's AdapterRAM caps at 4 GB.
+        script = (
+            "Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Class\\"
+            "{4d36e968-e325-11ce-bfc1-08002be10318}\\0*' -ErrorAction SilentlyContinue | "
+            "ForEach-Object { \"$($_.DriverDesc)|$($_.'HardwareInformation.qwMemorySize')\" }"
+        )
+        out = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", script], capture_output=True, text=True, check=False
+        ).stdout
+    else:
+        lines = []
+        for card in sorted(Path("/sys/class/drm").glob("card[0-9]")):
+            vram = card / "device" / "mem_info_vram_total"  # amdgpu
+            label = card / "device" / "label"
+            name = label.read_text().strip() if label.is_file() else ""
+            if not name and shutil.which("lspci"):
+                slot = (card / "device").resolve().name
+                name = subprocess.run(["lspci", "-s", slot], capture_output=True, text=True, check=False).stdout
+            lines.append(f"{name.strip()}|{vram.read_text().strip() if vram.is_file() else ''}")
+        out = "\n".join(lines)
+    seen = {g["name"] for g in gpus}  # nvidia-smi's reading wins over the registry's for the same card
+    return gpus + [g for g in parse_adapters(out) if g["name"] not in seen]
+
+
+def system_ram_gb() -> float:
+    if IS_WINDOWS:
+        import ctypes
+
+        class MemoryStatus(ctypes.Structure):
+            _fields_ = [("length", ctypes.c_ulong), ("load", ctypes.c_ulong)] + [
+                (n, ctypes.c_ulonglong) for n in ("total", "avail", "page_total", "page_avail", "virt_total",
+                                                   "virt_avail", "ext")
+            ]  # fmt: skip
+
+        status = MemoryStatus()
+        status.length = ctypes.sizeof(MemoryStatus)
+        ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status))  # type: ignore[attr-defined]
+        return round(status.total / 2**30, 1)
+    for line in Path("/proc/meminfo").read_text().splitlines():
+        if line.startswith("MemTotal:"):
+            return round(int(line.split()[1]) / 2**20, 1)
+    return 0.0
+
+
+def suggest_profile(gpus: list[dict[str, Any]]) -> tuple[str, str]:
+    """The profile for the strongest supported GPU, and why. Memory thresholds sit between profile sizes."""
+    ranked = sorted(gpus, key=lambda g: g["memory_gb"] or 0, reverse=True)
+    for gpu in ranked:
+        memory, vendor, name = gpu["memory_gb"], gpu["vendor"], gpu["name"]
+        if memory is None:
+            return "cpu-only", f"found {name}, but not how much memory it has; pick its profile by hand"
+        if vendor == "nvidia":
+            for limit, profile in ((7, None), (10, "nvidia-8gb"), (14, "nvidia-12gb"), (20, "nvidia-16gb")):
+                if memory < limit:
+                    if profile is None:
+                        return "cpu-only", f"{name} has {memory} GB, less than the smallest GPU profile"
+                    return profile, f"{name}, {memory} GB"
+            return "nvidia-24gb-plus", f"{name}, {memory} GB"
+        if vendor == "amd":
+            if memory >= 48:
+                return "amd-unified-128gb", f"{name}, {memory} GB available to the GPU"
+            if memory >= 20:
+                return "amd-24gb", f"{name}, {memory} GB"
+            if memory >= 14:
+                return "amd-16gb", f"{name}, {memory} GB"
+        if vendor == "intel":
+            if memory >= 14:
+                return "intel-arc-16gb", f"{name}, {memory} GB"
+            if memory >= 10:
+                return "intel-arc-12gb", f"{name}, {memory} GB"
+    if ranked:
+        return "cpu-only", "no supported GPU with enough memory for a GPU profile"
+    return "cpu-only", "no supported GPU found"
+
+
+def model_plan(profile: dict[str, Any], catalog: dict[str, dict[str, Any]], overrides: dict[str, str]) -> dict:
+    """tier -> catalog entry id, from the profile's `download` keys and any --tier0/--tier1 overrides."""
+    plan = {}
+    for tier in TIERS:
+        choice = overrides.get(tier) or profile["tiers"][tier].get("download")
+        if not choice:
+            die(f"profile {profile['profile']['name']} names no download for {tier}; pass --{tier} <id>")
+        if choice not in catalog:
+            die(f"{choice!r} is not in config/models.toml (see `python aegis.py models list`)")
+        plan[tier] = choice
+    return plan
+
+
+def sha256_of(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1 << 22), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def download_model(entry: dict[str, Any], dest: Path, base_url: str = HUGGING_FACE) -> None:
+    """Fetch one catalog file to `dest`, resuming a partial download, and refuse it unless size and SHA-256 match."""
+    part = dest.with_name(dest.name + ".part")
+    digest = hashlib.sha256()
+    have = 0
+    if part.exists():
+        with part.open("rb") as source:
+            for chunk in iter(lambda: source.read(1 << 22), b""):
+                digest.update(chunk)
+                have += len(chunk)
+    url = f"{base_url}/{entry['repo']}/resolve/main/{entry['path']}"
+    headers = {"User-Agent": f"aegis-local/{VERSION}"}
+    if have:
+        headers["Range"] = f"bytes={have}-"
+    request = urllib.request.Request(url, headers=headers)
+    started, shown = time.monotonic(), 0.0
+    with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310 (https URL built from the catalog)
+        if have and response.status != 206:  # the server ignored the range: start over
+            digest, have = hashlib.sha256(), 0
+        with part.open("ab" if have else "wb") as sink:
+            for chunk in iter(lambda: response.read(1 << 20), b""):
+                sink.write(chunk)
+                digest.update(chunk)
+                have += len(chunk)
+                now = time.monotonic()
+                if now - shown >= 2 or have == entry["size"]:
+                    shown = now
+                    rate = have / max(now - started, 0.001) / 2**20
+                    print(
+                        f"\r    {have / 1e9:6.2f} of {entry['size'] / 1e9:.2f} GB  {rate:6.1f} MB/s",
+                        end="",
+                        flush=True,
+                    )
+    print()
+    if have != entry["size"] or digest.hexdigest() != entry["sha256"]:
+        part.unlink(missing_ok=True)
+        die(f"{entry['path']}: the download doesn't match config/models.toml (size or SHA-256); nothing was kept")
+    part.replace(dest)
+
+
+def set_env_values(path: Path, values: dict[str, str]) -> None:
+    """Set KEY=value lines in a .env file, keeping every other line (and comment) as it is."""
+    text = path.read_bytes().decode("utf-8") if path.is_file() else ""
+    newline = "\r\n" if "\r\n" in text else "\n"  # keep the file's own line endings
+    lines = text.splitlines()
+    pending = dict(values)
+    for i, line in enumerate(lines):
+        key = line.split("=", 1)[0].strip()
+        if key in pending and not line.lstrip().startswith("#"):
+            lines[i] = f"{key}={pending.pop(key)}"
+    lines += [f"{key}={value}" for key, value in pending.items()]
+    path.write_bytes((newline.join(lines) + newline).encode("utf-8"))
+
+
+def cmd_models(args: argparse.Namespace) -> int:
+    catalog = load_catalog()
+    if args.action == "list":
+        print(f"{'id':26} {'size':>9}  {'license':11} measured  repository / file")
+        for model_id, entry in catalog.items():
+            mark = "yes" if entry.get("measured") else "-"
+            print(f"{model_id:26} {entry['size'] / 1e9:6.2f} GB  {entry['license']:11} {mark:9} "
+                  f"{entry['repo']}/{entry['path']}")  # fmt: skip
+        return 0
+
+    cfg = settings()
+    if args.action == "verify":
+        by_file = {entry["path"]: (model_id, entry) for model_id, entry in catalog.items()}
+        bad = 0
+        for tier in TIERS:
+            configured = cfg.get(f"AEGIS_{tier.upper()}_MODEL", "")
+            path = Path(configured) if configured else None
+            if path is None or not path.is_file():
+                print(f"{tier}: no model file at {configured or '(unset in .env)'}")
+                bad += 1
+                continue
+            known = by_file.get(path.name)
+            if known is None:
+                print(f"{tier}: {path.name} isn't in config/models.toml, so there is no hash to check it against")
+                continue
+            ok = path.stat().st_size == known[1]["size"] and sha256_of(path) == known[1]["sha256"]
+            print(f"{tier}: {path.name} {'matches' if ok else 'DOES NOT MATCH'} {known[0]}")
+            bad += 0 if ok else 1
+        return 1 if bad else 0
+
+    gpus, ram = detect_gpus(), system_ram_gb()
+    suggested, reason = suggest_profile(gpus)
+    if args.action == "suggest":
+        for gpu in gpus or [{"name": "none found", "memory_gb": None}]:
+            memory = f"{gpu['memory_gb']} GB" if gpu.get("memory_gb") is not None else "memory unknown"
+            print(f"GPU: {gpu['name']} ({memory})")
+        print(f"RAM: {ram} GB")
+        print(f"suggested profile: {suggested} ({reason})")
+        profile = load_profile(suggested)
+        for tier, model_id in model_plan(profile, catalog, {}).items():
+            entry = catalog[model_id]
+            print(f"  {tier}: {entry['name']}, {entry['size'] / 1e9:.2f} GB, {entry['license']}"
+                  f"{', measured' if entry.get('measured') else ''}")  # fmt: skip
+        current = cfg.get("AEGIS_PROFILE")
+        if current and current != suggested:
+            print(f"(.env currently sets AEGIS_PROFILE={current})")
+        print(f"next: python aegis.py models get --profile {suggested}")
+        return 0
+
+    # get
+    name = args.profile or cfg.get("AEGIS_PROFILE") or suggested
+    profile = load_profile(name)
+    plan = model_plan(profile, catalog, {"tier0": args.tier0, "tier1": args.tier1})
+    dest_dir = Path(args.dir).expanduser().resolve() if args.dir else MODELS_DIR
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    todo = []
+    print(f"profile {name}; files go to {dest_dir}")
+    for tier, model_id in plan.items():
+        entry = catalog[model_id]
+        dest = dest_dir / entry["path"]
+        present = dest.is_file() and dest.stat().st_size == entry["size"]
+        note = "already there (will be checked)" if present else f"{entry['size'] / 1e9:.2f} GB to download"
+        print(f"  {tier}: {entry['name']} from huggingface.co/{entry['repo']} ({entry['license']}), {note}")
+        todo.append((tier, entry, dest, present))
+    needed = sum(entry["size"] for _, entry, _, present in todo if not present)
+    free = shutil.disk_usage(dest_dir).free
+    if needed > free:
+        die(f"needs {needed / 1e9:.1f} GB, but {dest_dir} has {free / 1e9:.1f} GB free")
+    if needed and not args.yes:
+        try:
+            answer = input(f"download {needed / 1e9:.1f} GB? [y/N] ").strip().lower()
+        except EOFError:  # no terminal to ask on: treat as "no"
+            answer = ""
+        if answer not in {"y", "yes"}:
+            print("nothing downloaded")
+            return 1
+    for _tier, entry, dest, present in todo:
+        if present:
+            print(f"  checking {dest.name}")
+            if sha256_of(dest) == entry["sha256"]:
+                continue
+            die(f"{dest} has the right size but not the right SHA-256; move it aside and run again")
+        print(f"  downloading {dest.name}")
+        download_model(entry, dest)
+    env_file = ROOT / ".env"
+    if not env_file.is_file() and (ROOT / ".env.example").is_file():
+        shutil.copyfile(ROOT / ".env.example", env_file)
+    values = {f"AEGIS_{tier.upper()}_MODEL": dest.as_posix() for tier, _, dest, _ in todo}
+    values["AEGIS_PROFILE"] = name
+    set_env_values(env_file, values)
+    print("verified, and .env now points at them:")
+    for key, value in values.items():
+        print(f"  {key}={value}")
+    print("next: python aegis.py doctor")
+    return 0
 
 
 # -- container runtime -----------------------------------------------------------------------
@@ -708,6 +1009,19 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_opencode)
 
     sub.add_parser("env", help="print shell lines exporting the client token").set_defaults(func=cmd_env)
+
+    p = sub.add_parser("models", help="suggest a profile for this machine and fetch its model files")
+    models = p.add_subparsers(dest="action", required=True)
+    models.add_parser("suggest", help="detect the GPU and RAM, and suggest a profile and its models")
+    models.add_parser("list", help="list the model files in config/models.toml")
+    get = models.add_parser("get", help="download the profile's model files, check them, and set .env")
+    get.add_argument("--profile", help="profile to fetch for (default: .env's, else the suggested one)")
+    get.add_argument("--dir", help=f"where to put the files (default: {MODELS_DIR.name}/ in this checkout)")
+    get.add_argument("--tier0", help="a model id from `models list`, instead of the profile's")
+    get.add_argument("--tier1", help="a model id from `models list`, instead of the profile's")
+    get.add_argument("--yes", action="store_true", help="don't ask before downloading")
+    models.add_parser("verify", help="check .env's model files against their SHA-256 in config/models.toml")
+    p.set_defaults(func=cmd_models)
     return parser
 
 

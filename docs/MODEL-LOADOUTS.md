@@ -44,11 +44,39 @@ availability, its license, and its results on the harness's own tool-call and ve
 | **Intel Arc 16 GB** (A770) | SYCL or Vulkan / SYCL or Vulkan | 4B dense Q6_K | 20–30B MoE IQ4_XS | Tier 1 on GPU |
 | **CPU only** | CPU / CPU | 1–4B dense Q4_K_M | 7–9B dense Q4_K_M | Everything in RAM; use for CI and evaluation |
 
+## The model catalog
+
+`python aegis.py models get` downloads the files named by each tier's `download` key. The key is an
+id in [config/models.toml](../config/models.toml), which pins each file:
+
+```toml
+[models."qwen3.5-9b-q6_k"]
+name = "Qwen3.5-9B Q6_K"
+repo = "lmstudio-community/Qwen3.5-9B-GGUF"   # Hugging Face repository
+path = "Qwen3.5-9B-Q6_K.gguf"                 # file in that repository
+size = 7359259040                             # bytes
+sha256 = "b2ccc477..."                        # the full 64-character hash
+license = "apache-2.0"
+measured = "docs/validation/.../README.md"    # only when eval results exist
+```
+
+The download is refused unless both the size and the hash match. To add a file:
+1. take `size` and `sha256` from `https://huggingface.co/api/models/<repo>/tree/main` (the `lfs`
+   fields), or from the file's page on Hugging Face;
+2. check the license on the base model's page, and leave out gated models: the helper doesn't sign in;
+3. run `python -m pytest tests/test_models.py`, which checks every entry and every profile's
+   `download` ids.
+
+Today only the two `nvidia-12gb` files are marked `measured`. The others are the profiles'
+candidates at their quantization, picked from the model maker's repository or a well-known
+repackager, and are untested.
+
 ## Contributing a profile
 
 1. Copy the closest file in `config/profiles/` and rename it for your hardware.
 2. Fill in the models you used and the measured numbers in `[measured]`: tokens per second for
-   each tier at your context size, and peak VRAM.
+   each tier at your context size, and peak VRAM. If you used other files than the profile's
+   `download` entries, add them to the catalog (above) and point `download` at them.
 3. Run `python aegis.py up --profile <name>` and the router's smoke test.
 4. Run the [eval suite](../evals/README.md) (`python evals/run.py run --runs 10`) and include its
    `summary.md` and `manifest.json`: they say how often the builder fixed each fixture with these

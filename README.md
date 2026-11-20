@@ -53,7 +53,8 @@ OpenCode ──► model-router :4000 ──► llama-server (native GPU, one pe
 ## Quick start
 
 New to this? The [setup guide](docs/GUIDE.md) walks through everything from a fresh machine:
-- picking a profile for your GPU and finding its models;
+- picking a profile for your GPU and downloading its models (`python aegis.py models suggest`,
+  then `models get`, on `main`);
 - starting the stack;
 - working in OpenCode's browser interface.
 
@@ -97,7 +98,9 @@ requirements.
 | `amd-16gb`, `amd-24gb`, `amd-unified-128gb` | Radeon RX 7000/9000, Ryzen AI Max |
 | `intel-arc-12gb`, `intel-arc-16gb` | Arc B580, A770 |
 
-See [docs/MODEL-LOADOUTS.md](docs/MODEL-LOADOUTS.md) for the reasoning behind each one.
+See [docs/MODEL-LOADOUTS.md](docs/MODEL-LOADOUTS.md) for the reasoning behind each one. Each
+profile names two files from [config/models.toml](config/models.toml), pinned by SHA-256, which
+`python aegis.py models get` downloads and checks.
 
 ## Repository layout
 
@@ -111,6 +114,7 @@ aegis-local/
 │   ├── policy.yaml           Loop breaker, budgets, taint and approval rules
 │   ├── mcp-servers.yaml      Upstream tool servers and their trust levels
 │   ├── opencode.json         Drop-in OpenCode configuration
+│   ├── models.toml           Model files by repository, size and SHA-256
 │   ├── agents/               planner, builder, verifier, essayist prompts
 │   └── profiles/*.toml       GPU and model loadouts
 ├── services/
