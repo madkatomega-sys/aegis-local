@@ -54,6 +54,7 @@ results show that the harness works on the hardware, not how fast the recommende
 
 | Release | OS and runtime | Hardware | Profile and backend | Models | Result |
 |---|---|---|---|---|---|
+| 0.3.0 | Windows 11 Pro 26300, Docker Desktop 29.9.3, OpenCode 1.19.5 | i9-9900K, 32 GB RAM, RTX 4070 12 GB | `nvidia-12gb`, llama.cpp b12361 CUDA | Qwen3.5-9B Q6_K on tier 1 (GPU), Qwen3-4B Q4_K_M on tier 0 (CPU), both matching the model catalog | All checks pass, including the browser interface and a real download through the model helper; the eval suite fixed 12 of 12 runs; tier 1 at 54 tok/s, 8.9 GB GPU memory. [Evidence](validation/0.3.0-windows11-rtx4070/README.md) |
 | 0.2.0 | Windows 11 Pro 26300, Docker Desktop 29.9.3 | i9-9900K, 32 GB RAM, RTX 4070 12 GB | `nvidia-12gb`, llama.cpp b12361 CUDA | Qwen3.5-9B Q6_K on tier 1 (GPU), Qwen3-4B Q4_K_M on tier 0 (CPU) | All checks pass; the eval suite fixed 12 of 12 runs; tier 1 at 54 tok/s, tier 0 at 12 tok/s, 8.8 GB GPU memory. [Evidence](validation/0.2.0-windows11-rtx4070/README.md) |
 | 0.1.0 | Windows 11 Pro 26300, Docker Desktop 29.9.3 | i9-9900K, 32 GB RAM, RTX 4070 12 GB | `nvidia-12gb`, llama.cpp b12361 CUDA 13.5 and Vulkan | Qwen3-4B Q4_K_M on both tiers | All checks pass; tier 1 at 120 tok/s (CUDA) and 133 tok/s (Vulkan), tier 0 on the CPU at 12 tok/s, 6.6 GB GPU memory. [Evidence](validation/0.1.0-windows11-rtx4070/README.md) |
 

@@ -324,6 +324,15 @@ Where they stand in 0.2:
 Until a deferred item is run and its evidence added under `docs/validation/`, treat it as
 untested, not as passing.
 
+In 0.3, the three open items stay where they were: the GitHub token and native Linux checks are still
+deferred and open, and AMD and Intel reports still await testers. `aegis.py models suggest` can
+now detect AMD and Intel GPUs, but only its parsing is tested; nobody has run it on those cards.
+One more item is open:
+
+| Item | Status |
+|---|---|
+| The OpenCode 2.x desktop app | **Open.** Its built-in server (`opencode-cli serve --service`, 2.3.0) hangs on every turn with this stack, while the same binary run standalone works. `aegis.py opencode --web` uses OpenCode 1.19.5 instead ([GUIDE.md](GUIDE.md#8-the-opencode-desktop-app-and-other-clients)) |
+
 ## 10. Design corrections made while scaffolding
 
 Writing the scaffold surfaced places where the original sketch didn't hold up. These are now part

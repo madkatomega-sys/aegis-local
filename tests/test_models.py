@@ -257,6 +257,25 @@ def test_get_downloads_checks_and_sets_env(small_catalog, tmp_path, monkeypatch)
     assert len(FakeHub.requests) == before
 
 
+def test_get_fetches_a_file_shared_by_both_tiers_once(small_catalog, tmp_path, monkeypatch):
+    for key in ("AEGIS_PROFILE", "AEGIS_TIER0_MODEL", "AEGIS_TIER1_MODEL"):
+        monkeypatch.delenv(key, raising=False)
+    models = tmp_path / "models"
+    args = ["models", "get", "--dir", str(models), "--tier1", "tier0-model", "--yes"]
+    assert aegis.main(args) == 0
+    assert [r["path"] for r in FakeHub.requests] == ["/org/model-GGUF/resolve/main/tier0.gguf"]
+    env = aegis.read_env_file(tmp_path / ".env")
+    assert env["AEGIS_TIER0_MODEL"] == env["AEGIS_TIER1_MODEL"] == (models / "tier0.gguf").as_posix()
+
+
+def test_get_uses_the_suggested_profile_when_env_names_none(small_catalog, tmp_path, monkeypatch):
+    monkeypatch.delenv("AEGIS_PROFILE", raising=False)
+    (tmp_path / ".env").write_text("AEGIS_PROFILE=\n")
+    monkeypatch.setattr(aegis, "detect_gpus", lambda: [gpu("nvidia", 8.0)])
+    assert aegis.main(["models", "get", "--dir", str(tmp_path / "models"), "--yes"]) == 0
+    assert aegis.read_env_file(tmp_path / ".env")["AEGIS_PROFILE"] == "nvidia-8gb"
+
+
 def test_get_asks_before_downloading(small_catalog, tmp_path, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: "n")
     assert aegis.main(["models", "get", "--dir", str(tmp_path / "models")]) == 1

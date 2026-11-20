@@ -1,0 +1,128 @@
+# E9: the model helper, run from a clean checkout of 958054d, with no .env
+# models folder: <scratchpad>/e9-models, new and empty except for a hard link to the measured 9B file
+Invalid switch - "<scratchpad>\e9-models\Qwen3.5-9B-Q6_K.gguf".
+
+$ ls -la <scratchpad>/e9-models
+total 80
+drwxr-xr-x 1 <user> <group> 0 Nov 20 12:03 .
+drwxr-xr-x 1 <user> <group> 0 Nov 20 12:03 ..
+[exit 0]
+
+$ test -e .env
+[exit 1]
+
+$ <home>/Documents/flagship/aegis-local/.venv/Scripts/python.exe aegis.py models suggest
+GPU: NVIDIA GeForce RTX 4070 (12.0 GB)
+RAM: 31.9 GB
+suggested profile: nvidia-12gb (NVIDIA GeForce RTX 4070, 12.0 GB)
+  tier0: Qwen3-4B Q4_K_M, 2.50 GB, apache-2.0, measured
+  tier1: Qwen3.5-9B Q6_K, 7.36 GB, apache-2.0, measured
+next: python aegis.py models get --profile nvidia-12gb
+[exit 0]
+
+$ <home>/Documents/flagship/aegis-local/.venv/Scripts/python.exe aegis.py models list
+id                              size  license     measured  repository / file
+qwen3-4b-q4_k_m              2.50 GB  apache-2.0  yes       Qwen/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf
+qwen3.5-4b-q8_0              4.48 GB  apache-2.0  -         lmstudio-community/Qwen3.5-4B-GGUF/Qwen3.5-4B-Q8_0.gguf
+qwen3.5-4b-q6_k              3.46 GB  apache-2.0  -         lmstudio-community/Qwen3.5-4B-GGUF/Qwen3.5-4B-Q6_K.gguf
+qwen3.5-4b-q4_k_m            2.71 GB  apache-2.0  -         lmstudio-community/Qwen3.5-4B-GGUF/Qwen3.5-4B-Q4_K_M.gguf
+qwen3.5-9b-q8_0              9.53 GB  apache-2.0  -         lmstudio-community/Qwen3.5-9B-GGUF/Qwen3.5-9B-Q8_0.gguf
+qwen3.5-9b-q6_k              7.36 GB  apache-2.0  yes       lmstudio-community/Qwen3.5-9B-GGUF/Qwen3.5-9B-Q6_K.gguf
+qwen3.5-9b-q4_k_m            5.63 GB  apache-2.0  -         lmstudio-community/Qwen3.5-9B-GGUF/Qwen3.5-9B-Q4_K_M.gguf
+qwen3.5-27b-q4_k_m          16.54 GB  apache-2.0  -         lmstudio-community/Qwen3.5-27B-GGUF/Qwen3.5-27B-Q4_K_M.gguf
+qwen3.5-35b-a3b-q6_k        28.51 GB  apache-2.0  -         lmstudio-community/Qwen3.5-35B-A3B-GGUF/Qwen3.5-35B-A3B-Q6_K.gguf
+gemma-4-26b-a4b-iq4_xs      13.60 GB  apache-2.0  -         unsloth/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-UD-IQ4_XS.gguf
+[exit 0]
+
+# Answering 'n' first: nothing is downloaded
+$ echo n | python aegis.py models get --dir <e9-models>
+profile nvidia-12gb; files go to <scratchpad>\e9-models
+  tier0: Qwen3-4B Q4_K_M from huggingface.co/Qwen/Qwen3-4B-GGUF (apache-2.0), 2.50 GB to download
+  tier1: Qwen3.5-9B Q6_K from huggingface.co/lmstudio-community/Qwen3.5-9B-GGUF (apache-2.0), 7.36 GB to download
+download 9.9 GB? [y/N] nothing downloaded
+[exit 1]
+
+$ ls -la <scratchpad>/e9-models
+total 80
+drwxr-xr-x 1 <user> <group> 0 Nov 20 12:03 .
+drwxr-xr-x 1 <user> <group> 0 Nov 20 12:03 ..
+[exit 0]
+
+# Then 'y'
+$ echo y | python aegis.py models get --dir <e9-models>
+profile nvidia-12gb; files go to <scratchpad>\e9-models
+
+  tier0: Qwen3-4B Q4_K_M from huggingface.co/Qwen/Qwen3-4B-GGUF (apache-2.0), 2.50 GB to download
+
+  tier1: Qwen3.5-9B Q6_K from huggingface.co/lmstudio-community/Qwen3.5-9B-GGUF (apache-2.0), 7.36 GB to download
+
+download 9.9 GB? [y/N]   downloading Qwen3-4B-Q4_K_M.gguf
+
+  downloading Qwen3.5-9B-Q6_K.gguf
+
+verified, and .env now points at them:
+
+  AEGIS_TIER0_MODEL=<scratchpad>/e9-models/Qwen3-4B-Q4_K_M.gguf
+
+  AEGIS_TIER1_MODEL=<scratchpad>/e9-models/Qwen3.5-9B-Q6_K.gguf
+
+  AEGIS_PROFILE=nvidia-12gb
+
+next: python aegis.py doctor
+
+[exit 0, 114 s]
+
+$ ls -la <scratchpad>/e9-models
+total 9625612
+drwxr-xr-x 1 <user> <group>          0 Nov 20 12:05 .
+drwxr-xr-x 1 <user> <group>          0 Nov 20 12:03 ..
+-rw-r--r-- 1 <user> <group> 2497280256 Nov 20 12:04 Qwen3-4B-Q4_K_M.gguf
+-rw-r--r-- 1 <user> <group> 7359259040 Nov 20 12:05 Qwen3.5-9B-Q6_K.gguf
+[exit 0]
+
+$ sha256sum <scratchpad>/e9-models/Qwen3-4B-Q4_K_M.gguf
+7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5 *<scratchpad>/e9-models/Qwen3-4B-Q4_K_M.gguf
+[exit 0]
+
+$ grep AEGIS_PROFILE/TIER lines of the new checkout's .env
+AEGIS_PROFILE=nvidia-12gb
+AEGIS_TIER0_MODEL=<scratchpad>/e9-models/Qwen3-4B-Q4_K_M.gguf
+AEGIS_TIER1_MODEL=<scratchpad>/e9-models/Qwen3.5-9B-Q6_K.gguf
+
+$ <home>/Documents/flagship/aegis-local/.venv/Scripts/python.exe aegis.py models verify
+tier0: Qwen3-4B-Q4_K_M.gguf matches qwen3-4b-q4_k_m
+tier1: Qwen3.5-9B-Q6_K.gguf matches qwen3.5-9b-q6_k
+[exit 0]
+
+# A second run finds both files and downloads nothing
+
+$ <home>/Documents/flagship/aegis-local/.venv/Scripts/python.exe aegis.py models get --dir <scratchpad>/e9-models --yes
+profile nvidia-12gb; files go to <scratchpad>\e9-models
+  tier0: Qwen3-4B Q4_K_M from huggingface.co/Qwen/Qwen3-4B-GGUF (apache-2.0), already there (will be checked)
+  tier1: Qwen3.5-9B Q6_K from huggingface.co/lmstudio-community/Qwen3.5-9B-GGUF (apache-2.0), already there (will be checked)
+  checking Qwen3-4B-Q4_K_M.gguf
+  checking Qwen3.5-9B-Q6_K.gguf
+verified, and .env now points at them:
+  AEGIS_TIER0_MODEL=<scratchpad>/e9-models/Qwen3-4B-Q4_K_M.gguf
+  AEGIS_TIER1_MODEL=<scratchpad>/e9-models/Qwen3.5-9B-Q6_K.gguf
+  AEGIS_PROFILE=nvidia-12gb
+next: python aegis.py doctor
+[exit 0]
+
+# A corrupted file is caught: flip one byte of a copy's tail and verify
+
+$ <home>/Documents/flagship/aegis-local/.venv/Scripts/python.exe aegis.py models get --dir <scratchpad>/e9-models --yes
+error: <scratchpad>\e9-models\Qwen3-4B-Q4_K_M.gguf has the right size but not the right SHA-256; move it aside and run again
+profile nvidia-12gb; files go to <scratchpad>\e9-models
+  tier0: Qwen3-4B Q4_K_M from huggingface.co/Qwen/Qwen3-4B-GGUF (apache-2.0), already there (will be checked)
+  tier1: Qwen3.5-9B Q6_K from huggingface.co/lmstudio-community/Qwen3.5-9B-GGUF (apache-2.0), already there (will be checked)
+  checking Qwen3-4B-Q4_K_M.gguf
+[exit 1]
+
+$ <home>/Documents/flagship/aegis-local/.venv/Scripts/python.exe aegis.py models verify
+tier0: Qwen3-4B-Q4_K_M.gguf DOES NOT MATCH qwen3-4b-q4_k_m
+tier1: Qwen3.5-9B-Q6_K.gguf matches qwen3.5-9b-q6_k
+[exit 1]
+
+# The main checkout's .env is unchanged
+.env sha256 unchanged

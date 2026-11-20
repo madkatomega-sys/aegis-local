@@ -53,22 +53,23 @@ OpenCode ──► model-router :4000 ──► llama-server (native GPU, one pe
 ## Quick start
 
 New to this? The [setup guide](docs/GUIDE.md) walks through everything from a fresh machine:
-- picking a profile for your GPU and downloading its models (`python aegis.py models suggest`,
-  then `models get`, on `main`);
+- picking a profile for your GPU and downloading its models;
 - starting the stack;
 - working in OpenCode's browser interface.
 
 Requirements: Python 3.11+, Docker or Podman, a [`llama-server`](https://github.com/ggml-org/llama.cpp/releases)
-build for your GPU, and GGUF model files of your choice. Platform details are in
-[docs/PLATFORMS.md](docs/PLATFORMS.md).
+build for your GPU, and [OpenCode](https://github.com/anomalyco/opencode/releases/tag/v1.19.5)
+1.19.5. Platform details are in [docs/PLATFORMS.md](docs/PLATFORMS.md).
 
 ```bash
-git clone --branch v0.2.0 https://github.com/madkatomega-sys/aegis-local.git
+git clone --branch v0.3.0 https://github.com/madkatomega-sys/aegis-local.git
 cd aegis-local
-cp .env.example .env          # then set AEGIS_LLAMA_SERVER and the two model paths
+cp .env.example .env            # then set AEGIS_LLAMA_SERVER
+python aegis.py models suggest  # detects your GPU and picks a profile
+python aegis.py models get      # downloads its two models, checks them, and fills in .env
 python aegis.py doctor
-python aegis.py up --profile nvidia-12gb --pull
-python aegis.py opencode
+python aegis.py up --pull
+python aegis.py opencode --web  # or `opencode` for the terminal interface
 ```
 
 `--pull` runs the published container images, which are signed; see

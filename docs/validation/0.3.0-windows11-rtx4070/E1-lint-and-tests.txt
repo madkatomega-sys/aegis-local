@@ -1,0 +1,24 @@
+# E1: lint and the unit and HTTP-level test suite, on the Windows host
+
+$ <repo>/.venv/Scripts/python.exe -m ruff check .
+All checks passed!
+[exit 0]
+
+$ <repo>/.venv/Scripts/python.exe -m ruff format --check .
+104 files already formatted
+[exit 0]
+
+$ <repo>/.venv/Scripts/python.exe -m pytest -p no:warnings -o addopts= -q -rs
+...................ssss...................................ss............ [ 25%]
+........................................................................ [ 50%]
+........................................................................ [ 75%]
+.............................s........................................   [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_code_worker.py:43: the code worker runs on Linux
+SKIPPED [1] tests\test_code_worker.py:49: the code worker runs on Linux
+SKIPPED [1] tests\test_code_worker.py:56: the code worker runs on Linux
+SKIPPED [1] tests\test_code_worker.py:63: the code worker runs on Linux
+SKIPPED [2] tests\test_code_worker.py:277: the code worker runs on Linux
+SKIPPED [1] tests\test_prepare.py:121: install runs in the Linux worker image (venv/bin, lib/python*)
+279 passed, 7 skipped in 34.30s
+[exit 0]

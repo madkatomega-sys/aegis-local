@@ -1,0 +1,60 @@
+# Browser interface check, commit 958054d
+OpenCode 1.19.5
+
+$ python aegis.py opencode --web <sample repo> --port 4097
+
+## Reachability and sign-in
+  [ ok ] the server doesn't answer on the LAN address <LAN address>
+  [ ok ] no password: refused
+  [ ok ] wrong password: refused
+  [ ok ] right password: the agents are listed
+  [ ok ] only the Aegis provider is offered
+
+## A cross-site request that carries the password, as a signed-in browser would send it
+  preflight from another origin: HTTP 204, Access-Control-Allow-Origin: (none)
+  [ ok ] other origins aren't allowed to read replies
+  a 'simple' cross-site POST /session (text/plain): HTTP 200, sessions created: 1
+  (recorded, not judged: a browser sends this without a preflight, but can't read the reply)
+
+## Two Builder chats
+  chat ses_e06169b5bffezqGcosjNyI8BrO: 17 s, tools: ['aegis_code__list_files', 'aegis_code__read_file', 'aegis_code__read_file', 'aegis_code__run_check', 'aegis_code__replace_in_file', 'aegis_code__run_check']
+  chat ses_e061659daffe5jkC3YnYtPf2i4: 6 s, tools: ['aegis_code__list_files', 'aegis_code__run_check']
+  [ ok ] chat 1 edited the sandbox
+  [ ok ] chat 1's last test run passed
+  [ ok ] chat 2 ran the tests and they passed
+
+## Guard ledger: 8 events after id 88
+  89 8c9f4784…GcosjNyI8BrO code__list_files allow ok=1
+  90 8c9f4784…GcosjNyI8BrO code__read_file allow ok=1
+  91 8c9f4784…GcosjNyI8BrO code__read_file allow ok=1
+  92 8c9f4784…GcosjNyI8BrO code__run_check allow ok=0
+  93 8c9f4784…GcosjNyI8BrO code__replace_in_file allow ok=1
+  94 8c9f4784…GcosjNyI8BrO code__run_check allow ok=1
+  95 8c9f4784…kC3YnYtPf2i4 code__list_files allow ok=1
+  96 8c9f4784…kC3YnYtPf2i4 code__run_check allow ok=1
+  [ ok ] every guard call carried a chat tag
+  [ ok ] each chat has its own guard session
+  [ ok ] both chats share one MCP connection
+  [ ok ] no call was denied, held, or tripped
+
+## Titles and status
+  chat 1 title: 'Sandbox tests failure resolution'
+  [ ok ] chat 1's title is a title
+  chat 2 title: 'Sandbox tests execution status check'
+  [ ok ] chat 2's title is a title
+  chat 1 toasts: ['Aegis: budget 79 | clean']
+  [ ok ] the status plugin spoke in chat 1
+  chat 2 toasts: ['Aegis: budget 79 | clean']
+  [ ok ] the status plugin spoke in chat 2
+
+## Launcher output
+[0m
+  ⠀                                ▄
+  █▀▀█ █▀▀█ █▀▀█ █▀▀▄ █▀▀▀ █▀▀█ █▀▀█ █▀▀█
+  █  █ █  █ █▀▀▀ █  █ █    █  █ █  █ █▀▀▀
+  ▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀
+[0m
+[94m[1m  Web interface:     [0m http://127.0.0.1:4097/
+  [ ok ] the server is gone after stopping it
+
+all browser checks passed

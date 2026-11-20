@@ -1,0 +1,147 @@
+# E7: the eval suite, default arm, 2 runs of each fixture
+
+$ <repo>/.venv/Scripts/python.exe aegis.py up --profile nvidia-12gb --no-build
+ Volume aegis-local_aegis-workspace Creating
+ Volume aegis-local_aegis-workspace Creating
+ Volume aegis-local_aegis-venv Creating
+ Volume aegis-local_aegis-venv Creating
+ Network aegis-local_sandbox-math Creating
+ Network aegis-local_sandbox-code Creating
+ Network aegis-local_sandbox-writing Creating
+ Network aegis-local_sandbox-writing Creating
+ Volume aegis-local_guard-data Creating
+ Volume aegis-local_guard-data Creating
+ Network aegis-local_sandbox-math Creating
+ Network aegis-local_sandbox-code Creating
+ Network aegis-local_control Creating
+ Volume aegis-local_writing-index Creating
+ Volume aegis-local_writing-index Creating
+ Network aegis-local_control Creating
+ Volume aegis-local_aegis-venv Created
+ Volume aegis-local_aegis-venv Created
+ Volume aegis-local_aegis-workspace Created
+ Volume aegis-local_aegis-workspace Created
+ Volume aegis-local_guard-data Created
+ Volume aegis-local_guard-data Created
+ Volume aegis-local_writing-index Created
+ Volume aegis-local_writing-index Created
+ Network aegis-local_sandbox-code Created
+ Network aegis-local_sandbox-code Created
+ Container aegis-local-code-worker-1 Creating
+ Network aegis-local_sandbox-writing Created
+ Network aegis-local_sandbox-writing Created
+ Container aegis-local-writing-auditor-1 Creating
+ Network aegis-local_sandbox-math Created
+ Network aegis-local_sandbox-math Created
+ Container aegis-local-math-physics-mcp-1 Creating
+ Network aegis-local_control Created
+ Network aegis-local_control Created
+ Container aegis-local-model-router-1 Creating
+ Container aegis-local-writing-auditor-1 Created
+ Container aegis-local-code-worker-1 Created
+ Container aegis-local-math-physics-mcp-1 Created
+ Container aegis-local-model-router-1 Created
+ Container aegis-local-mcp-guard-proxy-1 Creating
+ Container aegis-local-mcp-guard-proxy-1 Created
+ Container aegis-local-model-router-1 Starting
+ Container aegis-local-writing-auditor-1 Starting
+ Container aegis-local-math-physics-mcp-1 Starting
+ Container aegis-local-code-worker-1 Starting
+ Container aegis-local-model-router-1 Started
+ Container aegis-local-writing-auditor-1 Started
+ Container aegis-local-math-physics-mcp-1 Started
+ Container aegis-local-code-worker-1 Started
+ Container aegis-local-mcp-guard-proxy-1 Starting
+ Container aegis-local-mcp-guard-proxy-1 Started
+ Container aegis-local-writing-auditor-1 Waiting
+ Container aegis-local-model-router-1 Waiting
+ Container aegis-local-mcp-guard-proxy-1 Waiting
+ Container aegis-local-code-worker-1 Waiting
+ Container aegis-local-math-physics-mcp-1 Waiting
+ Container aegis-local-model-router-1 Healthy
+ Container aegis-local-writing-auditor-1 Healthy
+ Container aegis-local-code-worker-1 Healthy
+ Container aegis-local-math-physics-mcp-1 Healthy
+ Container aegis-local-mcp-guard-proxy-1 Healthy
+tier0: starting llama-server (pid 7108) on 127.0.0.1:8080; log in .aegis/logs/tier0.log
+tier1: starting llama-server (pid 9424) on 127.0.0.1:8081; log in .aegis/logs/tier1.log
+tier0: healthy
+tier1: healthy
+router: http://127.0.0.1:4000/v1    guard: http://127.0.0.1:4100/mcp
+next: python aegis.py opencode   (or run `python aegis.py env` and start opencode yourself)
+[exit 0]
+
+$ <repo>/.venv/Scripts/python.exe evals/run.py run --runs 2 --out <scratchpad>/val030/E7-evals --opencode <home>\AppData\Local/Programs/opencode/v1.19.5/opencode.exe
+ Container aegis-local-code-worker-run-b87aca0310ad Creating
+ Container aegis-local-code-worker-run-b87aca0310ad Created
+ Container aegis-local-workspace-prepare-run-6e4bbff557fc Creating
+ Container aegis-local-workspace-prepare-run-6e4bbff557fc Created
+nothing to install
+12 runs to go in <scratchpad>\val030\E7-evals (0 already recorded)
+no dependencies declared (looked at requirements*.txt and pyproject.toml); clearing any old ones
+installing into the sandbox's environment (wheels only)
+calc-default-01              fixed                  24 s  1 passed in 0.01s
+ Container aegis-local-code-worker-run-38861c474807 Creating
+ Container aegis-local-code-worker-run-38861c474807 Created
+cart-default-01              fixed                  48 s  3 passed in 0.02s
+ Container aegis-local-code-worker-run-d2c8aa1594bb Creating
+ Container aegis-local-code-worker-run-d2c8aa1594bb Created
+chunks-default-01            fixed                  37 s  2 passed in 0.01s
+ Container aegis-local-code-worker-run-f5425ae6e250 Creating
+ Container aegis-local-code-worker-run-f5425ae6e250 Created
+median-crlf-default-01       fixed                  28 s  2 passed in 0.01s
+ Container aegis-local-code-worker-run-2909fd96ae32 Creating
+ Container aegis-local-code-worker-run-2909fd96ae32 Created
+ Container aegis-local-workspace-prepare-run-d9326505d1aa Creating
+ Container aegis-local-workspace-prepare-run-d9326505d1aa Created
+Successfully installed flexcache-0.3 flexparser-0.4 pint-0.26.2 platformdirs-4.14.8
+requirements.txt: pint>=0.24,<1
+installing into the sandbox's environment (wheels only)
+pace-default-01              fixed                  22 s  2 passed in 0.35s
+ Container aegis-local-code-worker-run-7903ab1d052d Creating
+ Container aegis-local-code-worker-run-7903ab1d052d Created
+ Container aegis-local-workspace-prepare-run-153a3e8c9364 Creating
+ Container aegis-local-workspace-prepare-run-153a3e8c9364 Created
+nothing to install
+no dependencies declared (looked at requirements*.txt and pyproject.toml); clearing any old ones
+installing into the sandbox's environment (wheels only)
+slug-default-01              fixed                  27 s  3 passed in 0.02s
+ Container aegis-local-code-worker-run-edec5bacd214 Creating
+ Container aegis-local-code-worker-run-edec5bacd214 Created
+calc-default-02              fixed                  24 s  1 passed in 0.01s
+ Container aegis-local-code-worker-run-ec0184999613 Creating
+ Container aegis-local-code-worker-run-ec0184999613 Created
+cart-default-02              fixed                  45 s  3 passed in 0.01s
+ Container aegis-local-code-worker-run-c410336f158e Creating
+ Container aegis-local-code-worker-run-c410336f158e Created
+chunks-default-02            fixed                  48 s  2 passed in 0.01s
+ Container aegis-local-code-worker-run-a2ffa8909fab Creating
+ Container aegis-local-code-worker-run-a2ffa8909fab Created
+median-crlf-default-02       fixed                  26 s  2 passed in 0.01s
+ Container aegis-local-code-worker-run-8e15f09f3522 Creating
+ Container aegis-local-code-worker-run-8e15f09f3522 Created
+ Container aegis-local-workspace-prepare-run-3455065587de Creating
+ Container aegis-local-workspace-prepare-run-3455065587de Created
+Successfully installed flexcache-0.3 flexparser-0.4 pint-0.26.2 platformdirs-4.14.8
+requirements.txt: pint>=0.24,<1
+installing into the sandbox's environment (wheels only)
+pace-default-02              fixed                  24 s  2 passed in 0.36s
+ Container aegis-local-code-worker-run-3d4df912b682 Creating
+ Container aegis-local-code-worker-run-3d4df912b682 Created
+ Container aegis-local-workspace-prepare-run-aa97eaa8e5cb Creating
+ Container aegis-local-workspace-prepare-run-aa97eaa8e5cb Created
+nothing to install
+no dependencies declared (looked at requirements*.txt and pyproject.toml); clearing any old ones
+installing into the sandbox's environment (wheels only)
+slug-default-02              fixed                  27 s  3 passed in 0.02s
+
+| Fixture | Arm | Fixed | Edited, tests fail | No edit applied | Never tried to edit | Timed out | Median time |
+|---|---|---|---|---|---|---|---|
+| calc | default | 2/2 | 0 | 0 | 0 | 0 | 24 s |
+| cart | default | 2/2 | 0 | 0 | 0 | 0 | 46.5 s |
+| chunks | default | 2/2 | 0 | 0 | 0 | 0 | 42.5 s |
+| median-crlf | default | 2/2 | 0 | 0 | 0 | 0 | 27 s |
+| pace | default | 2/2 | 0 | 0 | 0 | 0 | 23 s |
+| slug | default | 2/2 | 0 | 0 | 0 | 0 | 27 s |
+
+[exit 0]

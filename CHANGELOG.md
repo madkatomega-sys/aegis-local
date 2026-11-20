@@ -6,6 +6,16 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-20
+
+From a fresh machine to a working agent in the browser. `aegis.py models` detects the GPU,
+suggests a profile, and downloads its model files, checked against pinned SHA-256 hashes.
+`aegis.py opencode --web` opens OpenCode's browser interface with the guard in front of every
+tool, and a setup guide walks through all of it. In the browser, each chat now gets its own guard
+session, titles are short again, and the status display follows the current chat. Validation on
+Windows 11 with an RTX 4070 is in
+[docs/validation](docs/validation/0.3.0-windows11-rtx4070/README.md).
+
 ### Added
 
 - A model helper, `python aegis.py models`:
@@ -29,6 +39,15 @@ All notable changes to this project are recorded here. The format follows
   for your GPU, finding and verifying its model files, starting the stack, loading a repository,
   and working in the browser. It also says why the OpenCode desktop app (2.3.0) doesn't work with
   Aegis yet, and why adding Aegis only as a model provider leaves out the guard.
+- `docs/validation/web_check.py`, a release check for the browser interface: sign-in, loopback
+  only, a cross-site request, two chats with their own guard sessions, titles, and status toasts.
+
+### Changed
+
+- `.env.example` leaves `AEGIS_PROFILE` empty instead of presetting `nvidia-12gb`, so
+  `models get` uses the profile `models suggest` picks and writes it in. `doctor` warns when no
+  profile is set, since `up` then falls back to `cpu-only`.
+- `models get` fetches and checks a file once when both tiers use it.
 
 ### Fixed
 
@@ -204,6 +223,7 @@ Found by the hardware validation on Windows 11 with an RTX 4070 (see
   container bridge (Linux).
 - The guard and its admin API require separate tokens that sandboxes never receive.
 
-[Unreleased]: https://github.com/madkatomega-sys/aegis-local/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/madkatomega-sys/aegis-local/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/madkatomega-sys/aegis-local/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/madkatomega-sys/aegis-local/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/madkatomega-sys/aegis-local/releases/tag/v0.1.0
