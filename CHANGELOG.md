@@ -6,6 +6,19 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `python aegis.py opencode --web [PROJECT]` opens OpenCode's browser interface on `127.0.0.1`:
+  - with the Aegis config and plugins;
+  - protected by a generated password, kept in `.aegis/tokens.env`;
+  - with a private OpenCode data folder under `.aegis/opencode-web`.
+
+  `--port` picks the port (default 4096). It needs OpenCode 1.x, and was checked on 1.19.5.
+- `docs/GUIDE.md`, a setup guide from a fresh machine to the browser interface: choosing a profile
+  for your GPU, finding and verifying its model files, starting the stack, loading a repository,
+  and working in the browser. It also says why the OpenCode desktop app (2.3.0) doesn't work with
+  Aegis yet, and why adding Aegis only as a model provider leaves out the guard.
+
 ### Fixed
 
 - Chats in one OpenCode server no longer share a guard session.

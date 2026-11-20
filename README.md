@@ -52,6 +52,11 @@ OpenCode ──► model-router :4000 ──► llama-server (native GPU, one pe
 
 ## Quick start
 
+New to this? The [setup guide](docs/GUIDE.md) walks through everything from a fresh machine:
+- picking a profile for your GPU and finding its models;
+- starting the stack;
+- working in OpenCode's browser interface.
+
 Requirements: Python 3.11+, Docker or Podman, a [`llama-server`](https://github.com/ggml-org/llama.cpp/releases)
 build for your GPU, and GGUF model files of your choice. Platform details are in
 [docs/PLATFORMS.md](docs/PLATFORMS.md).
@@ -129,6 +134,7 @@ aegis-local/
 - [Platform setup](docs/PLATFORMS.md): Windows 11 and Linux
 - [Model loadouts](docs/MODEL-LOADOUTS.md): picking models and quantizations for your GPU
 - [Evals](evals/README.md): measuring how often the builder agent actually fixes a broken project
+- [Setup guide](docs/GUIDE.md): from a fresh machine to OpenCode's browser interface
 
 ## Contributing
 
