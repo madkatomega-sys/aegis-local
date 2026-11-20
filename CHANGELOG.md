@@ -16,6 +16,18 @@ session, titles are short again, and the status display follows the current chat
 Windows 11 with an RTX 4070 is in
 [docs/validation](docs/validation/0.3.0-windows11-rtx4070/README.md).
 
+Not verified in this release, and left open for later:
+- a native Linux run on real hardware, including the bridge-address binding that keeps
+  `llama-server` off the LAN;
+- the GitHub upstream with a real token;
+- `models suggest` on real AMD and Intel cards, and on Linux (only its parsing is tested);
+- signing in to `opencode --web` from a real browser (the validation drives the same HTTP API
+  with the same password);
+- the OpenCode 2.x desktop app, whose built-in server hangs on every turn with this stack.
+
+CI covers Linux with a stub model, and GitHub content through a fixture server. See
+[PLAN.md](docs/PLAN.md#9-milestones-and-acceptance-criteria).
+
 ### Added
 
 - A model helper, `python aegis.py models`:
