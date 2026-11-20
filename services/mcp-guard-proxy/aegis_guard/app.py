@@ -26,7 +26,7 @@ import yaml
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from aegis_guard import __version__
+from aegis_guard import __version__, chat
 from aegis_guard.breaker import BreakerConfig, CycleBreaker
 from aegis_guard.canonical import call_digest, content_digest
 from aegis_guard.ledger import Ledger
@@ -262,6 +262,26 @@ async def mcp_post(request: Request) -> Response:
     if method == "tools/list":
         return _rpc_result(request_id, {"tools": await _all_tools(request.app)})
     if method == "tools/call":
+        # A signed chat tag gives the call its chat's own state within this connection; see chat.py.
+        params, chat_id, problem = chat.split(params, request.app.state.client_token)
+        if problem:
+            state.breaker.note_attempt()
+            name = str(params.get("name", ""))
+            arguments = params.get("arguments") if isinstance(params.get("arguments"), dict) else {}
+            request.app.state.ledger.log(
+                session=session_id,
+                tool=name,
+                digest=call_digest(name, arguments),
+                decision="deny",
+                reason=problem,
+                tainted=state.taint.tainted,
+            )
+            return _rpc_result(request_id, _tool_error(f"[AEGIS] Denied: {problem}."))
+        if chat_id is not None:
+            session_id = f"{session_id}:{chat_id}"
+            state = sessions.setdefault(
+                session_id, SessionState(breaker=CycleBreaker(config=request.app.state.breaker_config))
+            )
         return _rpc_result(request_id, await _call_tool(request.app, session_id, state, params))
     return _rpc_error(request_id, -32601, f"method not found: {method}")
 
@@ -275,7 +295,11 @@ async def mcp_get() -> Response:
 async def mcp_delete(request: Request) -> Response:
     if not _authorized(request, request.app.state.client_token):
         return Response(status_code=401)
-    request.app.state.sessions.pop(request.headers.get("mcp-session-id", ""), None)
+    connection = request.headers.get("mcp-session-id", "")
+    sessions: dict[str, SessionState] = request.app.state.sessions
+    if connection:
+        for key in [k for k in sessions if k == connection or k.startswith(f"{connection}:")]:
+            del sessions[key]  # the connection and every chat in it
     return Response(status_code=204)
 
 
