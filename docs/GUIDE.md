@@ -84,16 +84,15 @@ It should print `1.19.5`.
 ## 3. Get Aegis-Local
 
 ```bash
-git clone https://github.com/madkatomega-sys/aegis-local.git
+git clone --branch v0.3.0 https://github.com/madkatomega-sys/aegis-local.git
 cd aegis-local
 cp .env.example .env
 ```
 
 On Windows PowerShell, the last line is `Copy-Item .env.example .env`.
 
-This guide uses `main`: the browser launcher (`aegis.py opencode --web`) and per-chat guard
-sessions arrived after release 0.2.0. Once a release includes them, you can clone its tag instead
-(`git clone --branch v<version> ...`).
+This guide is for release 0.3.0, the first with the model helper, the browser launcher
+(`aegis.py opencode --web`), and per-chat guard sessions.
 
 In `.env`, set your profile and where llama-server is:
 
@@ -183,11 +182,11 @@ python aegis.py status
 - **`doctor`** checks Python, the container runtime, llama-server, the profile, and the model
   files. Fix anything it marks before going on.
 - **`up`** starts both llama-server tiers and the containers.
-  - **On `main`:** it builds the container images from your checkout, which takes several minutes
-    the first time. Don't use `--pull` on `main`: it runs the published images of the last
-    release, whose guard doesn't know the chat tags that `main`'s OpenCode plugin sends.
-  - **On a release tag:** `up --pull` uses that release's published, signed images instead (see
+  - **On a release tag:** `up --pull` uses that release's published, signed images (see
     [SECURITY.md](../SECURITY.md) to verify them).
+  - **Without `--pull`,** it builds the images from your checkout, which takes several minutes the
+    first time. Always do this on `main`: `--pull` would run the last release's images, which may
+    not match `main`'s config and plugins.
 - **`status`** should show both tiers healthy, the router, and the guard.
 
 The first start takes a few minutes while the models load.

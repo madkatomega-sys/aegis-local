@@ -45,7 +45,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 REGISTRY = "ghcr.io/madkatomega-sys/aegis-local"
 ROOT = Path(__file__).resolve().parent
 STATE = ROOT / ".aegis"
@@ -458,7 +458,9 @@ def cmd_models(args: argparse.Namespace) -> int:
         note = "already there (will be checked)" if present else f"{entry['size'] / 1e9:.2f} GB to download"
         print(f"  {tier}: {entry['name']} from huggingface.co/{entry['repo']} ({entry['license']}), {note}")
         todo.append((tier, entry, dest, present))
-    needed = sum(entry["size"] for _, entry, _, present in todo if not present)
+    # Both tiers may use the same file: fetch and check it once.
+    unique = list({dest: (entry, dest, present) for _, entry, dest, present in todo}.values())
+    needed = sum(entry["size"] for entry, _, present in unique if not present)
     free = shutil.disk_usage(dest_dir).free
     if needed > free:
         die(f"needs {needed / 1e9:.1f} GB, but {dest_dir} has {free / 1e9:.1f} GB free")
@@ -470,7 +472,7 @@ def cmd_models(args: argparse.Namespace) -> int:
         if answer not in {"y", "yes"}:
             print("nothing downloaded")
             return 1
-    for _tier, entry, dest, present in todo:
+    for entry, dest, present in unique:
         if present:
             print(f"  checking {dest.name}")
             if sha256_of(dest) == entry["sha256"]:
@@ -648,6 +650,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     failures += binary is None
 
     name = args.profile or cfg.get("AEGIS_PROFILE") or "cpu-only"
+    if not (args.profile or cfg.get("AEGIS_PROFILE")):
+        say("warn", "no AEGIS_PROFILE in .env, so using cpu-only; `python aegis.py models suggest` picks one")
     profile = load_profile(name)
     problems = validate_profile(profile)
     say(

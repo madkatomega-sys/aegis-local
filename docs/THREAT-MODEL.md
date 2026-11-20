@@ -46,6 +46,8 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
 | Workers reaching each other | One internal network per worker | Compose networks |
 | Runaway computation (a pathological integral) | Each math computation runs in its own process and is killed at a wall-clock limit; container CPU, memory, and PID limits as backstop | `math-physics-mcp` |
 | Overlong or truncated extractions | Extraction schema bounds every field, compiled into the decoding grammar; guard re-validates and caps fields; extractor failure denies the result | Router config, guard |
+| A swapped, truncated, or corrupted model download | `aegis.py models get` downloads only the files in `config/models.toml`, over HTTPS from Hugging Face, and checks each one's size and SHA-256 against the catalog. A file that doesn't match is deleted and nothing is written to `.env`. Files already on disk are hash-checked too | `config/models.toml`, `aegis.py` |
+| Other machines, or other users, reaching OpenCode's browser server | `aegis.py opencode --web` binds it to `127.0.0.1` only and requires a generated password (HTTP basic auth, user `opencode`), kept in `.aegis/tokens.env`. It refuses OpenCode 2.x, whose server it hasn't checked | `aegis.py` |
 | Tampered release images | Images built only by the release workflow from owner-only tags, signed with Sigstore, with SBOM and provenance | `.github/workflows/release.yml` |
 
 ## How the defenses are tested
@@ -69,6 +71,14 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
   including that `replace_in_file` won't write into `.git`, outside the workspace, or through a
   symlink to either. `tests/test_policy.py` fails if any code-worker tool other than the readers
   isn't marked mutating, since the `code__*` catch-all rule is read-only.
+- `tests/test_guard_app.py` also checks the chat tags: a valid tag gets its own breaker and taint,
+  a tag that doesn't verify is refused, untagged calls share the connection's session, and the tag
+  never reaches a worker.
+- `tests/test_models.py` checks that every catalog entry is pinned (size and a full SHA-256), and
+  runs downloads against a local server: a file whose hash doesn't match is deleted, nothing is
+  kept from a failed download, and `.env` isn't changed.
+- `tests/test_launcher.py` checks that `opencode --web` binds to `127.0.0.1`, sets a password,
+  keeps OpenCode's data in a private folder, and refuses OpenCode 2.x.
 
 ## Known limitations
 
@@ -99,6 +109,21 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
     token, and the guard refuses a tag that doesn't verify. Without the plugin, or in OpenCode
     2.x's code mode, where tools are called from JavaScript the plugin doesn't see, calls carry no
     tag and share the connection's session, as in 0.2.
+- **A pinned model file is trusted as it was when it was pinned.** The hash stops a file from
+  changing under its name; it says nothing about whether the file was safe to begin with. Each
+  catalog entry was taken from the model maker's repository or a well-known repackager, and
+  `llama-server` parses whatever GGUF you give it (see "malicious model weights", out of scope
+  above).
+- **The browser server's password lives in the browser too.** Once you sign in, the browser can
+  send it with requests to `127.0.0.1:<port>` that a web page in another tab makes there.
+  OpenCode 1.19.5's server doesn't check where a request comes from. It doesn't let other origins
+  read its replies, but it does act on a "simple" cross-site POST: in the
+  [0.3.0 validation](validation/0.3.0-windows11-rtx4070/README.md#e8-the-browser-interface), one
+  that carried the password created a session. Sending that session a message needs its id, which
+  the page can't read. Some browsers also ask before a public page may reach `127.0.0.1`. Even a
+  request that got further would only reach the agent, whose tools all go through the guard. Use
+  the browser interface in a browser profile you don't browse
+  the web with, and stop it (Ctrl+C) when you're done.
 - **Tokens are stored in plain text** in `.aegis/tokens.env` (mode 0600 on Linux; protected by
   the user profile's permissions on Windows). Anyone who can read your home directory can call
   the guard.
@@ -124,5 +149,7 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
   with a stub model, so that binding has never been checked on real hardware. Until it has, check
   from another machine that ports 8080 and 8081 don't answer.
 
-Reviewed for release 0.2.0. Changes since 0.1.0: the `replace_in_file` edit tool and its `.git`
+Reviewed for release 0.3.0. Changes since 0.2.0: per-chat guard sessions (signed chat tags),
+OpenCode's browser server through `aegis.py opencode --web`, and model downloads through
+`aegis.py models get`. Changes from 0.1.0 to 0.2.0: the `replace_in_file` edit tool and its `.git`
 and symlink protection, the OpenCode lockdown, and `workspace prepare`.

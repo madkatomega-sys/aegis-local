@@ -1,6 +1,6 @@
 [project]
 name = "aegis-local"
-version = "0.2.0"
+version = "0.3.0"
 description = "A deterministic harness for local AI: constrained inference, an out-of-process tool firewall, loop breakers, and sandboxed verifiers."
 readme = "README.md"
 license = "Apache-2.0"
