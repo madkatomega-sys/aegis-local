@@ -6,6 +6,20 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Chats in one OpenCode server no longer share a guard session.
+  - **The problem:** OpenCode keeps one MCP connection for its whole life, so in the browser GUI
+    every chat counted against one circuit breaker, one call budget, and one taint flag. A second
+    chat's first test run could be stopped by the first chat's history.
+  - **The fix:** a new plugin, `.opencode/plugins/aegis-chat.ts`, tags each guard call with its
+    root chat, signed with the client token. The guard verifies the tag, keeps separate state per
+    chat, and strips the tag before the call reaches a worker. It refuses a tag that doesn't
+    verify, and treats untagged calls as before.
+  - **Loading it:** `aegis.py opencode` and `aegis.py env` now set `OPENCODE_CONFIG_DIR` to
+    `.opencode`, so OpenCode loads the plugins in `.opencode/plugins`. Until now they weren't
+    loaded at all, including the status display.
+
 ## [0.2.0] - 2026-11-17
 
 Makes the coding loop work with small local models, and measures it. The builder gets an exact

@@ -22,6 +22,23 @@ def test_workspace_commands_trust_the_read_only_mount():
     assert "safe.directory" in aegis.SAFE_DIRECTORY and "--global" in aegis.SAFE_DIRECTORY
 
 
+def test_opencode_loads_the_chat_tag_plugin():
+    """Without OPENCODE_CONFIG_DIR, OpenCode doesn't load .opencode/plugins, and all chats share a guard session."""
+    env = aegis.opencode_env("token")
+    assert env["OPENCODE_CONFIG"].endswith("opencode.json")
+    plugins = aegis.Path(env["OPENCODE_CONFIG_DIR"]) / "plugins"
+    assert (plugins / "aegis-chat.ts").is_file()
+    assert env["AEGIS_CLIENT_TOKEN"] == "token"
+
+
+def test_the_chat_plugin_signs_what_the_guard_verifies(repo_root):
+    """The plugin and aegis_guard.chat must agree on the message they sign and the tag's shape."""
+    source = (repo_root / ".opencode" / "plugins" / "aegis-chat.ts").read_text(encoding="utf-8")
+    assert 'createHmac("sha256", TOKEN).update(`aegis-chat:${chat}`).digest("hex")' in source
+    assert "output.args[TAG_ARG] = `${chat}.${mac}`" in source
+    assert 'const TAG_ARG = "_aegis_chat"' in source
+
+
 CRLF_DIFF = b"diff --git a/a.py b/a.py\n--- a/a.py\n+++ b/a.py\n@@ -1 +1 @@\n-x = 1\r\n+x = 2\r\n"
 
 

@@ -287,8 +287,13 @@ re-checked (availability, license, and benchmark results) before a profile is pr
 | B. OpenCode plugin only | Fast to build, great UX | Enforcement lives inside the process being guarded. Hooks may not cover every path (subagent sessions, MCP calls), and a plugin can be disabled or bypassed by a misconfigured agent. | Not a security boundary |
 | C. **Hybrid: OpenCode frontend, out-of-process kernel** | Good UX for free; guarantees hold even if the frontend misbehaves | Two moving parts to keep in sync | **Chosen** |
 
-Under option C, the OpenCode plugin is cosmetic (status and visibility). If it is removed, nothing
-about safety changes. That is the test of a correct split.
+Under option C, the OpenCode plugins are conveniences. If they are removed, nothing about safety
+changes. That is the test of a correct split.
+- **`aegis-hud.ts`** shows status.
+- **`aegis-chat.ts`** tags each guard call with its chat. The guard then keeps one breaker, budget,
+  and taint flag per chat, instead of one for the whole OpenCode server. Without the tag, every
+  chat shares one guard session, which is stricter, not looser. The tag is signed with the client
+  token, which the model never sees, so the model can't use it to escape its own chat's state.
 
 ## 9. Milestones and acceptance criteria
 

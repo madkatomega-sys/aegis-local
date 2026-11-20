@@ -84,6 +84,21 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
 - **Guard sessions live in memory.** Restarting the guard ends every session, including its
   taint and breaker state; clients must start a new session, which begins untainted. Approvals
   persist in the ledger, but an approval only matches the session that asked for it.
+- **A session is a chat, not a whole OpenCode server, when the chat plugin is loaded.**
+  - **How it works:** OpenCode keeps one MCP connection for as long as its server runs.
+    `.opencode/plugins/aegis-chat.ts` (loaded by `aegis.py opencode`) tags each call with its
+    root chat. The guard verifies the tag's HMAC against the client token and keeps separate
+    breaker, budget, and taint state for each chat.
+  - **What it gives up:** a new chat starts untainted even if an earlier chat in the same server
+    read untrusted content. That matches separate `opencode run` invocations, and the chats share
+    no conversation context. Sub-agents are tagged with their root chat, so delegating doesn't
+    shed taint.
+  - **What still carries over:** files. An agent in a tainted chat can write instructions into the
+    workspace that a later chat reads (see the next item).
+  - **What it doesn't depend on:** the model can't forge a tag, because it never sees the client
+    token, and the guard refuses a tag that doesn't verify. Without the plugin, or in OpenCode
+    2.x's code mode, where tools are called from JavaScript the plugin doesn't see, calls carry no
+    tag and share the connection's session, as in 0.2.
 - **Tokens are stored in plain text** in `.aegis/tokens.env` (mode 0600 on Linux; protected by
   the user profile's permissions on Windows). Anyone who can read your home directory can call
   the guard.

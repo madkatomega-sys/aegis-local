@@ -580,20 +580,31 @@ def cmd_workspace(args: argparse.Namespace) -> int:
     return 0
 
 
+def opencode_env(token: str) -> dict[str, str]:
+    """What OpenCode needs to use the harness: the config, the plugin folder, and the client token.
+
+    OPENCODE_CONFIG_DIR loads the plugins in .opencode/plugins, including aegis-chat.ts, which tags
+    each guard call with its chat so chats in one OpenCode server don't share guard state."""
+    return {
+        "OPENCODE_CONFIG": str(ROOT / "config" / "opencode.json"),
+        "OPENCODE_CONFIG_DIR": str(ROOT / ".opencode"),
+        "AEGIS_CLIENT_TOKEN": token,
+    }
+
+
 def cmd_opencode(args: argparse.Namespace) -> int:
     binary = shutil.which("opencode") or die("opencode not found; install it with `npm install -g opencode-ai`")
-    token = ensure_tokens()["AEGIS_CLIENT_TOKEN"]
-    env = {**os.environ, "OPENCODE_CONFIG": str(ROOT / "config" / "opencode.json"), "AEGIS_CLIENT_TOKEN": token}
+    env = {**os.environ, **opencode_env(ensure_tokens()["AEGIS_CLIENT_TOKEN"])}
     return subprocess.call([binary, *([args.project] if args.project else [])], env=env)
 
 
 def cmd_env(args: argparse.Namespace) -> int:
-    token = ensure_tokens()["AEGIS_CLIENT_TOKEN"]
-    config = ROOT / "config" / "opencode.json"
+    env = opencode_env(ensure_tokens()["AEGIS_CLIENT_TOKEN"])
     print("# PowerShell")
-    print(f'$env:AEGIS_CLIENT_TOKEN = "{token}"; $env:OPENCODE_CONFIG = "{config}"')
+    print("; ".join(f'$env:{k} = "{v}"' for k, v in env.items()))
     print("# bash / zsh")
-    print(f"export AEGIS_CLIENT_TOKEN='{token}' OPENCODE_CONFIG='{config.as_posix()}'")
+    posix = {k: (Path(v).as_posix() if k != "AEGIS_CLIENT_TOKEN" else v) for k, v in env.items()}
+    print("export " + " ".join(f"{k}='{v}'" for k, v in posix.items()))
     return 0
 
 

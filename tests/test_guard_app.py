@@ -16,6 +16,7 @@ import pytest
 import yaml
 from fastapi.testclient import TestClient
 
+from aegis_guard import chat
 from aegis_guard.app import app
 
 CLIENT_TOKEN = "client-token-for-tests-0123456789"
@@ -263,6 +264,117 @@ def test_reapplying_a_patch_does_not_excuse_a_retry(guard):
     call(client, session, "code__apply_patch", {"diff": "wrong"})
     again = call(client, session, "code__run_check", {"check": "pytest"})
     assert "Circuit breaker tripped (retry)" in text_of(again)
+
+
+# -- chats: one OpenCode server, one MCP connection, many chats ----------------------------------
+
+
+def tagged(chat_id: str, arguments: dict, token: str = CLIENT_TOKEN) -> dict:
+    """Arguments as the Aegis OpenCode plugin sends them for a chat."""
+    return {**arguments, chat.TAG_ARG: chat.sign(chat_id, token)}
+
+
+def admin_status(client: TestClient) -> dict:
+    return client.get("/status", headers={"Authorization": f"Bearer {ADMIN_TOKEN}"}).json()
+
+
+def test_each_chat_has_its_own_breaker(guard):
+    """Found in the browser GUI: a second chat's first test run was stopped by the first chat's history."""
+    client, fakes = guard
+    connection = open_session(client)
+    pytest_run = {"check": "pytest"}
+    assert call(client, connection, "code__run_check", tagged("chat-a", pytest_run))["isError"]
+    assert "Circuit breaker tripped" in text_of(
+        call(client, connection, "code__run_check", tagged("chat-a", pytest_run))
+    )
+    # A new chat on the same connection starts with a clean breaker.
+    other = call(client, connection, "code__run_check", tagged("chat-b", pytest_run))
+    assert "Circuit breaker tripped" not in text_of(other) and "exit code 1" in text_of(other)
+    sessions = admin_status(client)["sessions"]
+    assert sessions[f"{connection}:chat-a"]["tripped"]["rule"] == "retry"
+    assert sessions[f"{connection}:chat-b"]["tripped"] is None
+
+
+def test_each_chat_has_its_own_taint(guard):
+    client, fakes = guard
+    connection = open_session(client)
+    call(client, connection, "github__get_issue", tagged("chat-a", {"number": 7}))
+    held = call(client, connection, "code__apply_patch", tagged("chat-a", {"diff": "x"}))
+    assert "Held for approval" in text_of(held)
+    # Chat B never read the issue: its context holds none of that content, so it isn't tainted.
+    assert not call(client, connection, "code__apply_patch", tagged("chat-b", {"diff": "y"})).get("isError")
+    assert fakes.patch_calls == [{"diff": "y"}]
+
+
+def test_untagged_calls_share_the_connection_session(guard):
+    """Without the plugin, every call counts against one session: the stricter behavior of 0.2."""
+    client, fakes = guard
+    connection = open_session(client)
+    call(client, connection, "github__get_issue", {"number": 7})
+    assert "Held for approval" in text_of(call(client, connection, "code__apply_patch", {"diff": "x"}))
+    assert set(admin_status(client)["sessions"]) == {connection}
+
+
+@pytest.mark.parametrize(
+    "tag",
+    [
+        "chat-b.not-a-real-mac",
+        chat.sign("chat-b", "a-different-token-0123456789"),
+        chat.sign("chat-b", CLIENT_TOKEN)[:-1] + "0",
+        "no-mac-at-all",
+        "../x." + "0" * 64,
+        42,
+    ],
+    ids=["made-up", "wrong-key", "altered", "no-mac", "bad-id", "not-a-string"],
+)
+def test_a_tag_that_does_not_verify_is_refused(guard, tag):
+    """A model can write `_aegis_chat` into its arguments, but it can't sign one: the call is denied."""
+    client, fakes = guard
+    connection = open_session(client)
+    call(client, connection, "github__get_issue", {"number": 7})  # taint the connection
+    result = call(client, connection, "code__apply_patch", {"diff": "x", chat.TAG_ARG: tag})
+    assert result["isError"] and "Denied" in text_of(result)
+    assert fakes.patch_calls == []
+    assert set(admin_status(client)["sessions"]) == {connection}
+
+
+def test_the_tag_never_reaches_the_worker_or_the_digest(guard):
+    client, fakes = guard
+    connection = open_session(client)
+    call(client, connection, "code__apply_patch", tagged("chat-a", {"diff": "x"}))
+    assert fakes.patch_calls == [{"diff": "x"}]
+    # The same call from another chat has the same digest, so an approval can be matched to it.
+    digests = {
+        row[0] for row in app.state.ledger._db.execute("select digest from events where tool = 'code__apply_patch'")
+    }
+    call(client, connection, "code__apply_patch", tagged("chat-b", {"diff": "x"}))
+    assert {
+        row[0] for row in app.state.ledger._db.execute("select digest from events where tool = 'code__apply_patch'")
+    } == digests
+
+
+def test_closing_the_connection_drops_its_chats(guard):
+    client, _ = guard
+    connection = open_session(client)
+    other = open_session(client)
+    call(client, connection, "code__read_file", tagged("chat-a", {"path": "a"}))
+    call(client, other, "code__read_file", tagged("chat-a", {"path": "a"}))
+    headers = {"Authorization": f"Bearer {CLIENT_TOKEN}", "Mcp-Session-Id": connection}
+    assert client.delete("/mcp", headers=headers).status_code == 204
+    assert set(admin_status(client)["sessions"]) == {other, f"{other}:chat-a"}
+
+
+def test_a_chat_session_can_be_reset(guard):
+    client, fakes = guard
+    fakes.patch_fails = True
+    connection = open_session(client)
+    for _ in range(2):
+        last = call(client, connection, "code__apply_patch", tagged("chat-a", {"diff": "bad"}))
+    assert "Circuit breaker tripped" in text_of(last)
+    session = f"{connection}:chat-a"
+    reset = client.post(f"/admin/sessions/{session}/reset", headers={"Authorization": f"Bearer {ADMIN_TOKEN}"})
+    assert reset.status_code == 200
+    assert not call(client, connection, "code__read_file", tagged("chat-a", {"path": "a"})).get("isError")
 
 
 def test_notifications_are_accepted_without_a_body(guard):

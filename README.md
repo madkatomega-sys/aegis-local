@@ -115,7 +115,7 @@ aegis-local/
 │       ├── code-worker/      Git worktree, pytest, ruff, pyright
 │       ├── math-physics-mcp/ SymPy, pint, SciPy
 │       └── writing-auditor/  Vault index and citation checks
-├── .opencode/plugins/        status display (informational only)
+├── .opencode/plugins/        status display, and chat tags for per-chat guard sessions
 ├── vault-example/            sample notes for the writing auditor
 ├── docs/                     Plan, threat model, platforms, model loadouts
 ├── evals/                    Fixtures and runner that score the builder agent end to end
