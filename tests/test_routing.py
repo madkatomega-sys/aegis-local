@@ -77,10 +77,16 @@ def test_extractor_turns_thinking_off(config):
     assert upstream["chat_template_kwargs"] == {"other": 1, "enable_thinking": False}
 
 
-def test_other_aliases_leave_thinking_alone(config):
-    for alias in ("aegis-reasoner", "aegis-fast"):
-        request = body(alias)
-        assert "chat_template_kwargs" not in prepare_upstream_body(request, select_route(config, request, {}))
+def test_fast_alias_turns_thinking_off(config):
+    """OpenCode titles chats with the small model; with thinking on, a 4B model's title was its reasoning."""
+    request = body("aegis-fast")
+    upstream = prepare_upstream_body(request, select_route(config, request, {}))
+    assert upstream["chat_template_kwargs"] == {"enable_thinking": False}
+
+
+def test_the_reasoner_leaves_thinking_alone(config):
+    request = body("aegis-reasoner")
+    assert "chat_template_kwargs" not in prepare_upstream_body(request, select_route(config, request, {}))
 
 
 def test_max_tokens_is_clamped(config):

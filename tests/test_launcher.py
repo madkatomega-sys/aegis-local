@@ -92,6 +92,14 @@ def test_without_web_the_terminal_ui_starts_as_before(fake_opencode, tmp_path):
     )
 
 
+@pytest.mark.parametrize("plugin", ["aegis-chat.ts", "aegis-hud.ts"])
+def test_plugin_files_export_only_the_plugin(repo_root, plugin):
+    """OpenCode calls every export of a plugin file as a plugin, so a helper export would be run as one."""
+    source = (repo_root / ".opencode" / "plugins" / plugin).read_text(encoding="utf-8")
+    exports = [line for line in source.splitlines() if line.startswith("export ")]
+    assert len(exports) == 1 and ": Plugin = async" in exports[0]
+
+
 def test_the_chat_plugin_signs_what_the_guard_verifies(repo_root):
     """The plugin and aegis_guard.chat must agree on the message they sign and the tag's shape."""
     source = (repo_root / ".opencode" / "plugins" / "aegis-chat.ts").read_text(encoding="utf-8")

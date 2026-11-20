@@ -4,13 +4,18 @@
  * Informational only. Nothing about safety depends on this plugin: the guard proxy enforces
  * every rule out of process. If this file is deleted, the harness behaves exactly the same.
  *
- * After each tool call it asks the guard for session status and surfaces taint, remaining
- * budget, breaker trips, and pending approvals.
+ * After each guard tool call it asks the guard for status and shows the current chat's state:
+ * remaining call budget, whether it has read untrusted content, a tripped breaker, and pending
+ * approvals. A chat's guard session is "<connection>:<root chat ID>" when aegis-chat.ts tags its
+ * calls; without tags, every chat shares the connection's session, and that is what it shows.
+ *
+ * Only the plugin itself is exported: OpenCode calls every export of a plugin file as a plugin.
  */
 import type { Plugin } from "@opencode-ai/plugin"
 
 const GUARD_STATUS = process.env.AEGIS_GUARD_STATUS_URL ?? "http://127.0.0.1:4100/status"
 const TOKEN = process.env.AEGIS_CLIENT_TOKEN ?? ""
+const GUARD_TOOL_PREFIX = "aegis_"
 
 type SessionStatus = {
   remaining_budget: number
@@ -34,33 +39,86 @@ async function fetchStatus(): Promise<GuardStatus | null> {
   }
 }
 
-function summarize(status: GuardStatus): string {
-  const sessions = Object.values(status.sessions)
-  const tripped = sessions.find((s) => s.tripped)
-  const tainted = sessions.some((s) => s.tainted)
-  const budget = sessions.length ? Math.min(...sessions.map((s) => s.remaining_budget)) : 0
-  const parts = [`budget ${budget}`, tainted ? "TAINTED" : "clean"]
-  if (status.pending_approvals) parts.push(`${status.pending_approvals} awaiting approval`)
-  if (tripped?.tripped) parts.push(`breaker: ${tripped.tripped.rule}`)
-  return `Aegis: ${parts.join(" | ")}`
+// The guard session for a chat: the tagged one ("...:<chat>") if there is one, else the
+// connection's untagged session when there is exactly one.
+function sessionFor(status: GuardStatus, chat: string | null): SessionStatus | null {
+  const entries = Object.entries(status.sessions)
+  const tagged = chat ? entries.find(([id]) => id.endsWith(`:${chat}`)) : undefined
+  if (tagged) return tagged[1]
+  const untagged = entries.filter(([id]) => !id.includes(":"))
+  return untagged.length === 1 ? untagged[0][1] : null
+}
+
+function summarize(session: SessionStatus | null, pending: number): string {
+  const parts: string[] = []
+  if (session) {
+    parts.push(`budget ${session.remaining_budget}`)
+    parts.push(session.tainted ? `read untrusted content (${session.taint_sources.join(", ")})` : "clean")
+    if (session.tripped) parts.push(`breaker tripped: ${session.tripped.rule}`)
+  }
+  if (pending) parts.push(`${pending} awaiting approval`)
+  return parts.length ? `Aegis: ${parts.join(" | ")}` : ""
 }
 
 export const AegisHud: Plugin = async ({ client }) => {
-  let last = ""
+  const roots = new Map<string, string | null>()
+  const last = new Map<string, string>()
+
+  async function rootOf(sessionID: string): Promise<string | null> {
+    if (roots.has(sessionID)) return roots.get(sessionID) ?? null
+    let current = sessionID
+    let root: string | null = null
+    for (let depth = 0; depth < 32; depth++) {
+      let parent: string | undefined
+      try {
+        const res = await (client as any).session.get({ path: { id: current } })
+        if (!res?.data) break
+        parent = res.data.parentID
+      } catch {
+        break
+      }
+      if (!parent) {
+        root = current
+        break
+      }
+      current = parent
+    }
+    roots.set(sessionID, root)
+    return root
+  }
+
   return {
-    "tool.execute.after": async () => {
+    "tool.execute.after": async (input: any) => {
+      if (typeof input?.tool !== "string" || !input.tool.startsWith(GUARD_TOOL_PREFIX)) return
       const status = await fetchStatus()
       if (!status) return
-      const line = summarize(status)
-      if (line === last) return
-      last = line
-      // The TUI toast API may differ between OpenCode versions; fall back to the log.
+      const chat = await rootOf(input.sessionID)
+      const session = sessionFor(status, chat)
+      const line = summarize(session, status.pending_approvals)
+      // Speak when something worth knowing changes, not after every call: the first call, untrusted
+      // content, a tripped breaker, an approval waiting, or the budget running low (20 or fewer).
+      const budget = session?.remaining_budget ?? 0
+      const signature = JSON.stringify([
+        session?.tainted ?? null,
+        session?.tripped?.rule ?? null,
+        status.pending_approvals,
+        budget <= 20 ? budget : "ok",
+      ])
+      const key = chat ?? ""
+      if (!line || signature === last.get(key)) return
+      last.set(key, signature)
+      const alarming = line.includes("tripped") || line.includes("untrusted") || line.includes("approval")
+      // The toast API may differ between OpenCode versions; fall back to the log.
       const tui = (client as any).tui
-      if (tui?.showToast) {
-        await tui.showToast({ body: { message: line, variant: line.includes("breaker") ? "error" : "info" } })
-      } else {
-        await (client as any).app?.log?.({ body: { service: "aegis-hud", level: "info", message: line } })
+      try {
+        if (tui?.showToast) {
+          await tui.showToast({ body: { message: line, variant: alarming ? "warning" : "info" } })
+          return
+        }
+      } catch {
+        // fall through to the log
       }
+      await (client as any).app?.log?.({ body: { service: "aegis-hud", level: "info", message: line } })
     },
   }
 }
