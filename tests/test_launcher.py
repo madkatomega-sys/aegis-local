@@ -31,6 +31,67 @@ def test_opencode_loads_the_chat_tag_plugin():
     assert env["AEGIS_CLIENT_TOKEN"] == "token"
 
 
+@pytest.fixture
+def fake_opencode(monkeypatch, tmp_path):
+    """aegis.py with its state in tmp_path and an `opencode` that records how it was started."""
+    monkeypatch.setattr(aegis, "STATE", tmp_path / ".aegis")
+    monkeypatch.setattr(aegis, "TOKENS", tmp_path / ".aegis" / "tokens.env")
+    monkeypatch.setattr(aegis.shutil, "which", lambda name: "opencode")
+    version = {"value": "1.19.5"}
+    calls = []
+    monkeypatch.setattr(aegis, "opencode_version", lambda binary: version["value"])
+
+    def fake_call(command, env=None, cwd=None):
+        calls.append({"command": command, "env": env, "cwd": cwd})
+        return 0
+
+    monkeypatch.setattr(aegis.subprocess, "call", fake_call)
+    return calls, version
+
+
+def test_web_starts_the_browser_interface_on_loopback_with_a_password(fake_opencode, tmp_path, capsys):
+    calls, _ = fake_opencode
+    assert aegis.main(["opencode", "--web", str(tmp_path)]) == 0
+    (started,) = calls
+    assert started["command"] == ["opencode", "web", "--hostname", "127.0.0.1", "--port", "4096"]
+    assert started["cwd"] == tmp_path.resolve()
+    env = started["env"]
+    password = env["OPENCODE_SERVER_PASSWORD"]
+    assert len(password) >= 20
+    assert env["OPENCODE_CONFIG_DIR"].endswith(".opencode")
+    # A private OpenCode home under .aegis, so no other OpenCode setup leaks in.
+    assert all(env[f"XDG_{n}_HOME"].startswith(str(tmp_path / ".aegis" / "opencode-web")) for n in ("CONFIG", "DATA"))
+    assert password in capsys.readouterr().out
+    # The password is kept and reused.
+    assert aegis.main(["opencode", "--web", str(tmp_path)]) == 0
+    assert calls[1]["env"]["OPENCODE_SERVER_PASSWORD"] == password
+    assert aegis.read_env_file(tmp_path / ".aegis" / "tokens.env")["OPENCODE_SERVER_PASSWORD"] == password
+
+
+def test_web_takes_a_port(fake_opencode, tmp_path):
+    calls, _ = fake_opencode
+    aegis.main(["opencode", "--web", "--port", "4300", str(tmp_path)])
+    assert calls[0]["command"][-2:] == ["--port", "4300"]
+
+
+@pytest.mark.parametrize("version", ["2.3.0", "", "unknown"])
+def test_web_refuses_opencode_versions_it_has_not_been_checked_on(fake_opencode, tmp_path, version):
+    calls, current = fake_opencode
+    current["value"] = version
+    with pytest.raises(SystemExit):
+        aegis.main(["opencode", "--web", str(tmp_path)])
+    assert calls == []
+
+
+def test_without_web_the_terminal_ui_starts_as_before(fake_opencode, tmp_path):
+    calls, _ = fake_opencode
+    aegis.main(["opencode", str(tmp_path)])
+    assert calls[0]["command"] == ["opencode", str(tmp_path)]
+    assert "OPENCODE_SERVER_PASSWORD" not in calls[0]["env"] or calls[0]["env"]["OPENCODE_SERVER_PASSWORD"] == (
+        aegis.os.environ.get("OPENCODE_SERVER_PASSWORD")
+    )
+
+
 def test_the_chat_plugin_signs_what_the_guard_verifies(repo_root):
     """The plugin and aegis_guard.chat must agree on the message they sign and the tag's shape."""
     source = (repo_root / ".opencode" / "plugins" / "aegis-chat.ts").read_text(encoding="utf-8")

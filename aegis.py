@@ -18,6 +18,7 @@ Standard library only, so a fresh machine needs nothing but Python 3.11+ to run 
                                                 install the loaded project's dependencies (wheels only)
     python aegis.py workspace export            write the sandbox's changes to exports/*.patch
     python aegis.py opencode [PROJECT]          start OpenCode wired to the harness
+    python aegis.py opencode --web [PROJECT]    the same in OpenCode's browser interface (OpenCode 1.x)
     python aegis.py env                         print shell lines that export the client token
 """
 
@@ -109,6 +110,17 @@ def ensure_tokens() -> dict[str, str]:
     if not IS_WINDOWS:
         TOKENS.chmod(0o600)
     return tokens
+
+
+def ensure_web_password() -> str:
+    """The password for OpenCode's browser interface, kept beside the guard tokens and reused."""
+    tokens = ensure_tokens()
+    if tokens.get("OPENCODE_SERVER_PASSWORD"):
+        return tokens["OPENCODE_SERVER_PASSWORD"]
+    password = secrets.token_urlsafe(18)
+    with TOKENS.open("a", encoding="utf-8") as sink:
+        sink.write(f"OPENCODE_SERVER_PASSWORD={password}\n")
+    return password
 
 
 def http_json(url: str, *, method: str = "GET", token: str | None = None, timeout: float = 5.0) -> Any:
@@ -592,10 +604,41 @@ def opencode_env(token: str) -> dict[str, str]:
     }
 
 
+def opencode_version(binary: str) -> str:
+    result = subprocess.run([binary, "--version"], capture_output=True, text=True, check=False)
+    return result.stdout.strip().splitlines()[-1].strip() if result.stdout.strip() else ""
+
+
 def cmd_opencode(args: argparse.Namespace) -> int:
-    binary = shutil.which("opencode") or die("opencode not found; install it with `npm install -g opencode-ai`")
+    binary = shutil.which("opencode") or die("opencode not found; install it with `npm install -g opencode-ai@1.19.5`")
     env = {**os.environ, **opencode_env(ensure_tokens()["AEGIS_CLIENT_TOKEN"])}
-    return subprocess.call([binary, *([args.project] if args.project else [])], env=env)
+    if not args.web:
+        return subprocess.call([binary, *([args.project] if args.project else [])], env=env)
+
+    # The browser interface is `opencode web`, an OpenCode 1.x command. OpenCode 2.x serves its GUI
+    # from a shared background service, which hangs on every turn with this stack (see docs/GUIDE.md).
+    version = opencode_version(binary)
+    if not version.split(".")[0].isdigit() or int(version.split(".")[0]) != 1:
+        die(
+            f"--web needs OpenCode 1.x (checked on 1.19.5); found {version or 'an unknown version'}. "
+            "Install it with `npm install -g opencode-ai@1.19.5`, "
+            "or run `python aegis.py opencode` for the terminal UI."
+        )
+    project = Path(args.project).resolve() if args.project else Path.cwd()
+    if not project.is_dir():
+        die(f"{project} is not a folder")
+    password = ensure_web_password()
+    env["OPENCODE_SERVER_PASSWORD"] = password
+    # A private OpenCode home, so the browser interface uses only this harness's config and keeps
+    # its sessions apart from any other OpenCode setup on the machine.
+    home = STATE / "opencode-web"
+    for name in ("CONFIG", "DATA", "STATE", "CACHE"):
+        env[f"XDG_{name}_HOME"] = str(home / name.lower())
+    print(f"OpenCode {version} browser interface: http://127.0.0.1:{args.port}/")
+    print(f"sign in as user `opencode` with password {password}   (also in .aegis/tokens.env)")
+    print(f"project folder: {project}   stop with Ctrl+C")
+    command = [binary, "web", "--hostname", "127.0.0.1", "--port", str(args.port)]
+    return subprocess.call(command, env=env, cwd=project)
 
 
 def cmd_env(args: argparse.Namespace) -> int:
@@ -660,6 +703,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("opencode", help="start OpenCode wired to the harness")
     p.add_argument("project", nargs="?")
+    p.add_argument("--web", action="store_true", help="open OpenCode's browser interface on 127.0.0.1 (OpenCode 1.x)")
+    p.add_argument("--port", type=int, default=4096, help="port for --web (default 4096)")
     p.set_defaults(func=cmd_opencode)
 
     sub.add_parser("env", help="print shell lines exporting the client token").set_defaults(func=cmd_env)
