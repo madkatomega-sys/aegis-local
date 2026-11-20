@@ -20,6 +20,8 @@ role = "extractor"
 size_class = "4B dense"
 quant = "Q8_0"
 candidates = ["Qwen3.5-4B"]
+# The measured file (see [measured]); the Q8_0 candidate above is untested.
+download = "qwen3-4b-q4_k_m"
 model = ""
 ctx = 16384
 gpu_layers = 0
@@ -31,6 +33,7 @@ role = "reasoner"
 size_class = "9-14B dense"
 quant = "Q6_K"
 candidates = ["Qwen3.5-9B Q6_K", "Qwen2.5-Coder-14B Q4_K_M"]
+download = "qwen3.5-9b-q6_k"
 model = ""
 ctx = 32768
 gpu_layers = 99

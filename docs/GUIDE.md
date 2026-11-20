@@ -21,7 +21,18 @@ You need:
 - About 30 GB of free disk for the container images and two model files.
 - A GPU is optional (there is a CPU-only profile), but a coding agent is much faster with one.
 
-Find your GPU and its memory:
+Once you have Python and the repository ([sections 2](#2-install-the-prerequisites) and
+[3](#3-get-aegis-local)), Aegis can do this step for you:
+
+```bash
+python aegis.py models suggest
+```
+
+It reads the GPU (through `nvidia-smi`, the Windows registry, or `/sys` and `lspci` on Linux) and
+the system RAM, then names a profile and the two model files that go with it. Check what it found
+against the table below; if it can't read your GPU's memory, it says so and suggests `cpu-only`.
+
+To find your GPU and its memory by hand:
 
 | | Windows | Linux |
 |---|---|---|
@@ -98,9 +109,34 @@ Each profile runs two models:
 - **Tier 0**, small, often on the CPU: it extracts facts from untrusted content and writes titles.
 - **Tier 1**, the reasoner: the model the agents actually think with.
 
+### The quick way
+
+```bash
+python aegis.py models get
+```
+
+For your profile (from `.env`, or the suggested one; `--profile` picks another), this:
+1. shows the two files, their size and license, and where they come from;
+2. checks there is room on the disk, and asks before downloading anything;
+3. downloads from Hugging Face into `models/` in the checkout (ignored by Git; `--dir` puts them
+   elsewhere), resuming a download that was cut off;
+4. checks each file's SHA-256 against [config/models.toml](../config/models.toml), and deletes a file
+   that doesn't match;
+5. writes `AEGIS_PROFILE`, `AEGIS_TIER0_MODEL` and `AEGIS_TIER1_MODEL` into `.env`.
+
+Files already there are hash-checked, not downloaded again. `--tier0` and `--tier1` swap in another
+model from the catalog (`python aegis.py models list` shows them all, and which were measured).
+`python aegis.py models verify` re-checks the files `.env` points at.
+
+`config/models.toml` pins every file by repository, name, size and SHA-256, so a file that changes
+upstream is refused rather than run. Read each model's license before you use it; all the files
+in the catalog today are Apache-2.0.
+
+### By hand
+
 Open your profile's file in `config/profiles/`. `size_class` and `quant` under `[tiers.tier0]` and
-`[tiers.tier1]` say what to get, and `candidates` names models that fit.
-[MODEL-LOADOUTS.md](MODEL-LOADOUTS.md) explains the choices.
+`[tiers.tier1]` say what to get, `candidates` names models that fit, and `download` is the catalog
+entry `models get` would use. [MODEL-LOADOUTS.md](MODEL-LOADOUTS.md) explains the choices.
 
 For each tier:
 
@@ -130,7 +166,7 @@ For each tier:
 | Tier | File | From | SHA-256 | License |
 |---|---|---|---|---|
 | 1 | `Qwen3.5-9B-Q6_K.gguf` (7.36 GB) | `lmstudio-community/Qwen3.5-9B-GGUF` | `b2ccc477f0a2449de299bef560b63e498cae94a2f3a3bae13df01168d77773e6` | Apache-2.0 |
-| 0 | `Qwen3-4B-Q4_K_M.gguf` (2.5 GB) | a Qwen3-4B GGUF build | `7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5` | Apache-2.0 |
+| 0 | `Qwen3-4B-Q4_K_M.gguf` (2.50 GB) | `Qwen/Qwen3-4B-GGUF` | `7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5` | Apache-2.0 |
 
 The 9B on tier 1 fixed 14 of 15 eval runs, against 10 of 19 with a 4B on tier 1. If your GPU has
 less memory than the profile assumes, use a smaller quantization (for example `Q4_K_M`) before you
