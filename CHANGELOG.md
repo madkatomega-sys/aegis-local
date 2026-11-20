@@ -21,6 +21,16 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Chat titles in OpenCode are titles again, not tier 0's reasoning. With thinking on, the 4B
+  model answered "write a title" with a page of "Okay, the user wants a title…", which became
+  every chat's title and kept tier 0 busy for a minute or more on the CPU. The `aegis-fast` alias
+  (OpenCode's small model, used for titles and summaries) now turns thinking off, as the extractor
+  already did: titles take about 9 tokens.
+- The status plugin (`aegis-hud.ts`) shows the current chat's guard state: budget, untrusted
+  content, a tripped breaker, and approvals waiting. It used to show the lowest budget across all
+  sessions. It now speaks only when one of those changes or the budget runs low, not after every
+  call. It reacts only to guard tools, and the plugin files export nothing else, since OpenCode
+  runs every export as a plugin.
 - Chats in one OpenCode server no longer share a guard session.
   - **The problem:** OpenCode keeps one MCP connection for its whole life, so in the browser GUI
     every chat counted against one circuit breaker, one call budget, and one taint flag. A second

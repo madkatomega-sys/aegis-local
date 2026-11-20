@@ -34,6 +34,10 @@ aliases:
     tier: tier1
   aegis-fast:
     tier: tier0
+    # OpenCode's small model: titles, summaries. With thinking on, a 4B model reasons out loud in
+    # its answer (a 283-token "Okay, the user wants a title..." instead of a 9-token title),
+    # which became every chat's title and kept tier 0 busy for a minute or more on the CPU.
+    reasoning: off
   aegis-extractor:
     tier: tier0
     escalate: false        # untrusted text never reaches a tool-capable tier through this alias
