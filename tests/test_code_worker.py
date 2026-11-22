@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 import pytest
-from mcp.server.fastmcp.exceptions import ToolError
+from mcp.server.mcpserver.exceptions import ToolError
 
 # The worker runs only in its Linux container. On Windows, text-mode stdin turns each "\n" of
 # a diff into "\r\n", which git then refuses to apply.

@@ -5,8 +5,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.exceptions import ToolError
+from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -15,7 +15,7 @@ from vault import VaultIndex
 VAULT = Path(os.environ.get("AEGIS_VAULT", "/vault"))
 INDEX = Path(os.environ.get("AEGIS_INDEX", "/data/index.sqlite"))
 
-mcp = FastMCP("writing-auditor", host="0.0.0.0", port=8000, stateless_http=True, json_response=True)
+mcp = MCPServer("writing-auditor")
 index = VaultIndex(INDEX)
 
 
@@ -67,4 +67,4 @@ async def healthz(request: Request) -> JSONResponse:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000, stateless_http=True, json_response=True)

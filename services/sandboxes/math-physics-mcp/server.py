@@ -16,8 +16,8 @@ import os
 from collections.abc import Callable
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.exceptions import ToolError
+from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -36,7 +36,7 @@ else:  # Windows, for local development
 
 _slots = asyncio.Semaphore(MAX_CONCURRENT)
 
-mcp = FastMCP("math-physics", host="0.0.0.0", port=8000, stateless_http=True, json_response=True)
+mcp = MCPServer("math-physics")
 
 
 def _child(conn: Any, fn: Callable[..., Any], args: tuple[Any, ...]) -> None:
@@ -134,4 +134,4 @@ async def healthz(request: Request) -> JSONResponse:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000, stateless_http=True, json_response=True)
