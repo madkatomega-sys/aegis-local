@@ -10,10 +10,15 @@ code, math, physics, and writing.
 [![Release](https://img.shields.io/github/v/release/madkatomega-sys/aegis-local?include_prereleases)](https://github.com/madkatomega-sys/aegis-local/releases)
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange.svg)
 
-> **Status: 0.1, alpha.** The router, guard proxy, sandboxes, and launcher work end to end: a
+> **Status: 0.3, alpha.** The router, guard proxy, sandboxes, and launcher work end to end: a
 > real model on a local GPU, routed and schema-constrained, with untrusted content quarantined,
-> mutating calls held for approval, loops stopped, and sandboxes cut off from the network. What
-> was verified, on which hardware, is listed in the [release notes](CHANGELOG.md) and
+> mutating calls held for approval, loops stopped, and sandboxes cut off from the network. The
+> builder agent fixed 12 of 12 eval runs on a 12 GB GPU. New in 0.3:
+> - `aegis.py models` picks a profile for your GPU and downloads its models, checked by SHA-256;
+> - `aegis.py opencode --web` opens OpenCode's browser interface, with a guard session per chat;
+> - a [setup guide](docs/GUIDE.md) from a fresh machine to the browser.
+>
+> What was verified, on which hardware, is listed in the [release notes](CHANGELOG.md) and
 > [docs/PLATFORMS.md](docs/PLATFORMS.md#verified-configurations). Configuration and APIs may
 > change before 1.0. See the [plan](docs/PLAN.md#9-milestones-and-acceptance-criteria) for
 > what's next.
@@ -41,7 +46,8 @@ coprocessor, and make every decision that matters in deterministic code outside 
 | **Model router** (`:4000`) | OpenAI-compatible endpoint with stable aliases routed to a fast tier and a reasoning tier | Right-size the model per task; swap models without touching your IDE config |
 | **MCP guard proxy** (`:4100/mcp`) | The only tool server your IDE sees. Hashes every call, trips circuit breakers on loops, labels and quarantines untrusted content, holds risky actions for your approval | Safety enforced out of process, where neither the model nor the IDE can bypass it |
 | **Sandboxed verifiers** | `code-worker` (tests, types, lint), `math-physics-mcp` (SymPy, pint, SciPy), `writing-auditor` (citation hashes) | Answers are checked by compilers, algebra systems, and source hashes rather than taken on trust |
-| **OpenCode integration** | Drop-in config, least-privilege agents, a status plugin | A comfortable daily workflow with diffs, LSP, and GitHub |
+| **OpenCode integration** | Drop-in config, least-privilege agents, a per-chat status display, and the terminal or browser interface | A comfortable daily workflow with diffs, LSP, and GitHub |
+| **Model helper** (`aegis.py models`) | Detects your GPU, suggests a profile, downloads its two models from Hugging Face, and checks each file against a pinned SHA-256 | Get the right files for your card without hand-searching, and refuse a file that changed upstream |
 
 ```text
 OpenCode ──► model-router :4000 ──► llama-server (native GPU, one per tier)
