@@ -6,7 +6,7 @@ policy rules for github__* apply to it unchanged.
 
 from __future__ import annotations
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -18,7 +18,7 @@ ISSUE = (
     f"<!-- {INJECTION} -->"
 )
 
-mcp = FastMCP("fixture-github", host="0.0.0.0", port=8000, stateless_http=True, json_response=True)
+mcp = MCPServer("fixture-github")
 
 
 @mcp.tool()
@@ -39,4 +39,4 @@ async def healthz(request: Request) -> JSONResponse:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000, stateless_http=True, json_response=True)

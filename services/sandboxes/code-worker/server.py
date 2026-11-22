@@ -15,8 +15,8 @@ import re
 import subprocess
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.exceptions import ToolError
+from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -35,7 +35,7 @@ CHECKS: dict[str, list[str]] = {
     "compileall": ["python", "-m", "compileall", "-q"],
 }
 
-mcp = FastMCP("code-worker", host="0.0.0.0", port=8000, stateless_http=True, json_response=True)
+mcp = MCPServer("code-worker")
 
 
 def _git_env() -> dict[str, str]:
@@ -330,4 +330,11 @@ async def healthz(request: Request) -> JSONResponse:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    mcp.run(
+        transport="streamable-http",
+        host="0.0.0.0",
+        port=8000,
+        stateless_http=True,
+        json_response=True,
+        max_request_body_size=4 * MAX_EDIT_BYTES,
+    )
