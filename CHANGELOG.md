@@ -6,6 +6,17 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- The code worker, the math-physics worker and the writing auditor run on the mcp 2.x SDK
+  (`mcp>=2.3.0,<3`), where `FastMCP` is now `MCPServer`. Tool results and errors look the same
+  to the guard. mcp 2 caps request bodies at 4 MiB; the code worker raises that to four times
+  its 2 MB edit limit, so large edits still fit.
+- The release workflow uses the new major versions of the Docker actions: setup-qemu v4,
+  setup-buildx v4, login v4, metadata v6, build-push v7.
+- Higher minimum versions: fastapi 0.165.0, ruff 0.17.5, sympy 1.14.0, pint 0.25.3 (0.26.2 in
+  the math worker).
+
 ## [0.3.0] - 2026-11-20
 
 From a fresh machine to a working agent in the browser. `aegis.py models` detects the GPU,

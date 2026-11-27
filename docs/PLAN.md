@@ -333,6 +333,62 @@ One more item is open:
 |---|---|
 | The OpenCode 2.x desktop app | **Open.** Its built-in server (`opencode-cli serve --service`, 2.3.0) hangs on every turn with this stack, while the same binary run standalone works. `aegis.py opencode --web` uses OpenCode 1.19.5 instead ([GUIDE.md](GUIDE.md#8-the-opencode-desktop-app-and-other-clients)) |
 
+### The plan for 0.4: hardening and breadth
+
+0.3 made the harness easy to set up and use in the browser. 0.4 does three things:
+- closes the one known gap that 0.3 found, the browser server accepting cross-site requests;
+- makes the release checks harder to get wrong;
+- gets measured numbers for more than one profile.
+
+Everything below can be done on the maintainer's machine. Items that need something only the
+maintainer can provide are marked **(needs you)**.
+
+**Already done since 0.3** (on `main`, in the changelog's Unreleased section):
+- **The workers moved to the mcp 2.x SDK** (#53). This was checked on Windows, in WSL Ubuntu
+  (286 tests, none skipped), and with the Docker smoke test. The live-model walkthrough and the
+  eval suite haven't run on it yet. They are part of 0.4's release validation.
+- **The release workflow's Docker actions moved to their new majors** (#54). A dry run built
+  every image. Login, push and signing will first run on the 0.4 tag.
+- **The minor pins were raised:** fastapi, ruff, sympy and pint (#55, #56).
+
+#### Workstreams
+
+| # | Work | Done when | Size |
+|---|---|---|---|
+| W1 | **An origin check in front of the browser server.** `opencode --web` starts OpenCode on an internal loopback port and puts a small proxy, from the standard library, on the user-facing port. The proxy refuses three kinds of request: a `Host` other than `127.0.0.1:<port>` or `localhost:<port>` (DNS rebinding); a cross-site `Origin`, or a cross-site `Referer` when no `Origin` is sent; and a request that changes state without `Content-Type: application/json`. It passes everything else through, including the event stream. | Unit tests for each refusal, and for streaming. `web_check.py` judges the cross-site POST: refused, no session created. The threat model's known limitation is closed. A chat in a real browser works through the proxy. | M |
+| W2 | **A real-browser sign-in check (needs you).** Sign in to `opencode --web` in Edge or Chrome, run one chat, and confirm the status toast. This is a short manual step in the release checklist, recorded in the evidence. | It is in the 0.4 evidence, with the browser and its version. | S |
+| W3 | **Release checks that stop when their setup fails.** E9 becomes `docs/validation/model_check.py`. It hard-links files with `os.link`, so no shell can rewrite the command, and it stops before downloading if any setup step fails. `models get` gains `--only tier0` / `--only tier1` and `--max-gb N`: it refuses a plan bigger than `N`, so a check can't fetch more than was approved. | Tests for `--only` and `--max-gb`. `model_check.py` refuses to go on after a failed link, and that is tested. The validation scripts all exit non-zero on a setup failure. | S |
+| W4 | **Measure `nvidia-8gb` and `cpu-only` on this machine (needs you: downloads).** The RTX 4070 can run the 8 GB profile's files: tier 1 Qwen3.5-9B Q4_K_M (5.63 GB) on the GPU, and tier 0 Qwen3.5-4B Q6_K (3.46 GB) on the CPU. The 8 GB fit is shown by peak GPU memory staying under 8 GB. `cpu-only` runs both of its files (Qwen3.5-4B Q4_K_M 2.71 GB and the 9B Q4_K_M) on the CPU. Each profile gets the eval suite, with `--runs 5` for `cpu-only`, which is slow. | `[measured]` filled in for both profiles, with evidence under `docs/validation/`. Each profile's `download` files are marked `measured` in the catalog. The guide's table says which profiles have numbers. | M |
+| W5 | **The Linux launcher under WSL2 (needs you: one Docker Desktop setting).** The GPU is visible in WSL Ubuntu (`nvidia-smi` sees the RTX 4070), but Docker isn't reachable there until Docker Desktop's WSL integration is turned on for Ubuntu. With it on, run `aegis.py doctor`, `up` and the walkthrough from Ubuntu, with a Linux CUDA build of llama-server (a download). This exercises the Linux launch path and its bridge-address binding. | Evidence under `docs/validation/`. The plan's "native Linux" item is split: Linux launcher, done under WSL2; bare-metal Linux, still open. WSL2's network is NAT'd, so the LAN check isn't the same as on a real Linux host, and the evidence says so. | M |
+| W6 | **The OpenCode 2.x hang, time-boxed to one day.** Reduce the hang in `serve --service` to the smallest setup that shows it, with and without the Aegis config, and report it upstream with the reproduction. If 2.x's standalone `opencode serve` works, consider `--web` support for 2.x behind W1's proxy. | An upstream issue with the reproduction, linked from GUIDE section 8, and a decision: support 2.x in 0.4, or wait for a fix upstream. | S–M |
+| W7 | **The GitHub upstream with a real token (needs you: a fine-grained token).** Run the walkthrough's GitHub steps against the hosted endpoint, read-only on a scratch repository. | Evidence, and the plan's deferred item closed. | S |
+
+Sizes: S is up to half a day, M one to two days.
+
+#### Order
+
+1. **W3, then W1.** They are code-only, they need nothing from you, and W1 is the security fix.
+2. **W4 and W5** once the downloads and the Docker setting are approved. Each can run while the
+   other is being written up.
+3. **W6, time-boxed.**
+4. **W2 and W7** whenever you have ten minutes and a token.
+5. **Release validation for 0.4:**
+   - 0.3's E0–E9, from fresh volumes;
+   - E8 with the proxy's cross-site check judged;
+   - E9 through `model_check.py` with `--max-gb`;
+   - the live walkthrough and eval suite on mcp 2.x;
+   - the W2 manual step.
+
+#### Not in 0.4
+
+These stay in "Later" (§9's table):
+- per-value taint;
+- the Lean 4 worker;
+- guard sessions that survive a restart;
+- AMD and Intel reports, which still await testers.
+
+`nvidia-12gb` stays `tested = false` until a second person reproduces its numbers.
+
 ## 10. Design corrections made while scaffolding
 
 Writing the scaffold surfaced places where the original sketch didn't hold up. These are now part
