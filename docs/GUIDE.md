@@ -272,7 +272,9 @@ The terminal interface works the same way: `python aegis.py opencode ../my-proje
 
 ## 8. The OpenCode desktop app and other clients
 
-**The OpenCode desktop app (2.3.0) isn't supported yet. Use the browser interface above.**
+**The OpenCode desktop app (2.3.0) is experimental with Aegis.** The browser interface above is the
+supported way. The app can work once it's started with the right environment (below), but it has
+no status display, and it hasn't been through the release checks.
 
 In 0.3 every request through the app seemed to hang. The
 [cause](validation/opencode2-service-2026-11-27-windows11/README.md) is that the app starts
@@ -293,12 +295,14 @@ python aegis.py env    # prints the three values for this checkout
 Then quit the app completely, including its background `opencode-cli` process (check Task
 Manager), and start it again. Undo it by setting each variable to `$null` the same way.
 
-Even then, three things are missing under 2.x, which is why it's not supported yet:
-- **No per-chat guard sessions.** OpenCode 2.x doesn't load the Aegis plugins, because its
-  plugin API changed. So all chats share one guard session, as with 1.x without the plugin.
-- **No status display**, for the same reason.
-- **Code mode isn't re-checked.** 2.x adds a code-mode tool (`execute`) that calls other tools
-  from JavaScript. It hasn't been re-checked against the Aegis lockdown since 0.2.
+What you get under 2.x ([evidence](validation/opencode2-plugins-2026-11-27-windows11/README.md)):
+- **Per-chat guard sessions.** The Aegis plugins serve both OpenCode plugin APIs. A forked chat
+  shares its source's guard session, and a subagent its parent's.
+- **The Aegis lockdown, including 2.x's code mode.** The code-mode tool `execute` runs the agents'
+  JavaScript. Inside it, `fetch` is refused, because the config denies `webfetch`. OpenCode's own
+  code-mode tools, such as creating Git worktrees, are turned off by name.
+- **No status display.** 2.x shows toasts only from GUI and TUI plugins, and Aegis doesn't have
+  one yet. Use `python aegis.py status` and `python aegis.py pending`.
 
 The token in a user environment variable can be read by any program you run, as
 `.aegis/tokens.env` can.

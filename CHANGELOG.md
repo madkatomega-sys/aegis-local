@@ -18,6 +18,10 @@ All notable changes to this project are recorded here. The format follows
   folders it created itself.
 - `opencode --web --no-browser` doesn't open a browser. The launcher now opens it on the checked
   port itself, never on OpenCode's own.
+- The Aegis plugins work under OpenCode 2.x as well as 1.x. Each file's only export is a default
+  object, with `server` for 1.x and `id` and `setup` for 2.x. Under 2.3.0, chat tags cover
+  code-mode calls, forks (which share their source chat's guard session) and subagents. The status
+  display doesn't work under 2.x yet: 2.x gives toasts only to GUI and TUI plugins.
 
 ### Changed
 
@@ -41,6 +45,12 @@ All notable changes to this project are recorded here. The format follows
 
 ### Security
 
+- Under OpenCode 2.x, the Aegis agents can no longer reach OpenCode's own code-mode tools. 2.x's
+  `execute` tool can call them, and the permission rules don't cover them. In the audit, one of
+  them, `worktree_create`, ran `git` on the host. `config/opencode.json` turns off all eight by
+  name: worktree create, remove and list, session move and rename, models, and the two MCP resource
+  tools. `fetch` inside code mode was already refused, because the config denies `webfetch`.
+  Evidence: `docs/validation/opencode2-plugins-2026-11-27-windows11/`.
 - `aegis.py opencode --web` puts an origin check in front of OpenCode's browser server
   (`aegis_web.py`, standard library only). OpenCode now runs `serve` on a spare loopback port. The
   port you open refuses:

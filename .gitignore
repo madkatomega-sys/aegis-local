@@ -2,6 +2,8 @@
 .env
 *.local.yaml
 *.local.toml
+# OpenCode 2.x writes its background service's password here when OPENCODE_CONFIG_DIR is .opencode
+.opencode/service.json
 
 # Runtime state
 .aegis/

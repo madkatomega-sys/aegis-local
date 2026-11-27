@@ -32,7 +32,15 @@
     "edit": false,
     "patch": false,
     "bash": false,
-    "webfetch": false
+    "webfetch": false,
+    "opencode_worktree_create": false,
+    "opencode_worktree_remove": false,
+    "opencode_worktree_list": false,
+    "opencode_session_move": false,
+    "opencode_session_rename": false,
+    "opencode_models": false,
+    "opencode_list_mcp_resources": false,
+    "opencode_read_mcp_resource": false
   },
   "permission": {
     "edit": "deny",

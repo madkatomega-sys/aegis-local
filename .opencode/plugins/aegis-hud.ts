@@ -9,9 +9,12 @@
  * approvals. A chat's guard session is "<connection>:<root chat ID>" when aegis-chat.ts tags its
  * calls; without tags, every chat shares the connection's session, and that is what it shows.
  *
- * Only the plugin itself is exported: OpenCode calls every export of a plugin file as a plugin.
+ * One file serves both plugin APIs; its only export is a default object. OpenCode 1.x calls its
+ * `server` function and also calls every other export as a plugin, so nothing else is exported.
+ * OpenCode 2.x calls `setup`, which does nothing yet: in 2.x, toasts belong to GUI and TUI
+ * plugins, which run in the client, not to server plugins like this one. Under 2.x there is no
+ * status display until one of those is written.
  */
-import type { Plugin } from "@opencode-ai/plugin"
 
 const GUARD_STATUS = process.env.AEGIS_GUARD_STATUS_URL ?? "http://127.0.0.1:4100/status"
 const TOKEN = process.env.AEGIS_CLIENT_TOKEN ?? ""
@@ -60,7 +63,7 @@ function summarize(session: SessionStatus | null, pending: number): string {
   return parts.length ? `Aegis: ${parts.join(" | ")}` : ""
 }
 
-export const AegisHud: Plugin = async ({ client }) => {
+const aegisHud = async ({ client }: any) => {
   const roots = new Map<string, string | null>()
   const last = new Map<string, string>()
 
@@ -121,4 +124,10 @@ export const AegisHud: Plugin = async ({ client }) => {
       await (client as any).app?.log?.({ body: { service: "aegis-hud", level: "info", message: line } })
     },
   }
+}
+
+export default {
+  id: "aegis-hud",
+  server: aegisHud, // OpenCode 1.x
+  setup: async () => {}, // OpenCode 2.x: no toast API for server plugins (see above)
 }
