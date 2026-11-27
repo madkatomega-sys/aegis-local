@@ -1,6 +1,6 @@
 pytest>=9.2.0,<10
 ruff>=0.17.5,<1
-pyyaml>=6.0.3,<7
+pyyaml>=6.0.4,<7
 # Service dependencies the tests import directly
 fastapi>=0.165.0,<1
 httpx>=0.28.1,<1
