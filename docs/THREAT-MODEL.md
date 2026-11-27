@@ -41,7 +41,7 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
 | Wrong math or physics | Numeric and symbolic answers come from SymPy, pint, SciPy | `math-physics-mcp` |
 | Wrong code | Changes judged by exit codes of tests, type checks, linters | `code-worker` |
 | Invented citations | Quotes checked byte for byte against hashed source chunks | `writing-auditor` |
-| Bypass through the IDE | Enforcement never depends on OpenCode, its plugins, or agent prompts. Every OpenCode tool that reaches the host, the web, or another agent is turned off (edit, shell, web, file reading and search, skills, delegation to OpenCode's built-in agents), and only the local models are listed; checked on OpenCode 1.19.5 and 2.3.0 by capturing the tools each agent is offered | Design rule, `config/opencode.json` |
+| Bypass through the IDE | Enforcement never depends on OpenCode, its plugins, or agent prompts. Every OpenCode tool that reaches the host, the web, or another agent is turned off (edit, shell, web, file reading and search, skills, delegation to OpenCode's built-in agents), and only the local models are listed; checked on OpenCode 1.19.5 and 2.3.0 by capturing the tools each agent is offered. OpenCode 2.x's code-mode `execute` tool can call OpenCode's own tools, which the permission rules don't cover; one of them, `worktree_create`, ran `git` on the host. Those tools are turned off by name. `fetch` inside code mode is the `webfetch` permission, which stays denied. Both were checked on 2.3.0 by asking the agents to reach around them ([W8](validation/opencode2-plugins-2026-11-27-windows11/README.md#what-code-mode-can-reach)) | Design rule, `config/opencode.json` |
 | Sandboxed code calling the guard | `/mcp` requires a client token and `/admin` a separate admin token; sandboxes hold neither | Guard, `aegis.py` |
 | Workers reaching each other | One internal network per worker | Compose networks |
 | Runaway computation (a pathological integral) | Each math computation runs in its own process and is killed at a wall-clock limit; container CPU, memory, and PID limits as backstop | `math-physics-mcp` |
@@ -120,10 +120,12 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
     workspace that a later chat reads (see the next item).
   - **What it doesn't depend on:** the model can't forge a tag, because it never sees the client
     token, and the guard refuses a tag that doesn't verify. Without the plugin, calls carry no
-    tag and share the connection's session, as in 0.2. Under OpenCode 2.x that is always the case:
-    its plugin API changed, and 2.3.0 refuses to load the Aegis plugins at all
-    ([W6](validation/opencode2-service-2026-11-27-windows11/README.md#also-found-the-aegis-plugins-dont-load-in-opencode-2x)).
-    Its code mode, which calls tools from JavaScript, would bypass a plugin anyway.
+    tag and share the connection's session, as in 0.2.
+  - **OpenCode 2.x:** the plugin serves both plugin APIs. Under 2.x, a fork shares its source
+    chat's session as well as a subagent its parent's, so forking doesn't shed taint. 2.x's code
+    mode calls tools from JavaScript, but each of those calls still goes through the plugin's hook,
+    and is tagged
+    ([W8](validation/opencode2-plugins-2026-11-27-windows11/README.md#chat-tags)).
 - **A pinned model file is trusted as it was when it was pinned.** The hash stops a file from
   changing under its name; it says nothing about whether the file was safe to begin with. Each
   catalog entry was taken from the model maker's repository or a well-known repackager, and

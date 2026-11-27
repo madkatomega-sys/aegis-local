@@ -331,7 +331,7 @@ One more item is open:
 
 | Item | Status |
 |---|---|
-| The OpenCode 2.x desktop app | **Open, cause found.** Its background service reads `AEGIS_CLIENT_TOKEN` from its own environment, which the app starts without, so the guard refuses it and every request loops without tools ([evidence](validation/opencode2-service-2026-11-27-windows11/README.md)). Also, 2.x doesn't load the Aegis plugins. `aegis.py opencode --web` uses OpenCode 1.19.5 instead ([GUIDE.md](GUIDE.md#8-the-opencode-desktop-app-and-other-clients)); see W8 below |
+| The OpenCode 2.x desktop app | **Experimental.** Its background service reads `AEGIS_CLIENT_TOKEN` from its own environment, so the app must start with it ([W6](validation/opencode2-service-2026-11-27-windows11/README.md)). With that, chat tags and the code-mode lockdown work under 2.3.0 ([W8](validation/opencode2-plugins-2026-11-27-windows11/README.md)). There's no status display under 2.x, and the app hasn't been through the release checks. `aegis.py opencode --web` uses OpenCode 1.19.5 ([GUIDE.md](GUIDE.md#8-the-opencode-desktop-app-and-other-clients)) |
 
 ### The plan for 0.4: hardening and breadth
 
@@ -375,6 +375,16 @@ Sizes: S is up to half a day, M one to two days.
   - GUIDE §8 now says how to give the app that environment, and what's still missing under 2.x.
   - The upstream report is drafted, for the maintainer to file.
   - Decision: 2.x stays unsupported in 0.4, unless W8 gets done.
+- **W8 is done, apart from the 2.x status display:**
+  - The plugins serve both OpenCode plugin APIs. Chat tags work under 2.3.0, including code-mode
+    calls, forks and subagents.
+  - The code-mode audit found OpenCode's own code-mode tools uncovered by the permission rules
+    (`worktree_create` ran `git` on the host). They are turned off by name.
+  - `fetch` in code mode is refused, because the config denies `webfetch`
+    ([evidence](validation/opencode2-plugins-2026-11-27-windows11/README.md)).
+  - The desktop app is now **experimental**, not unsupported. It still has no status display (2.x
+    gives toasts only to GUI and TUI plugins), and it hasn't been through the release checks.
+  - `opencode --web` stays on 1.x.
 
 #### Order
 

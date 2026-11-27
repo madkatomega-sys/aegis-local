@@ -137,18 +137,29 @@ def test_without_web_the_terminal_ui_starts_as_before(fake_opencode, tmp_path):
 
 
 @pytest.mark.parametrize("plugin", ["aegis-chat.ts", "aegis-hud.ts"])
-def test_plugin_files_export_only_the_plugin(repo_root, plugin):
-    """OpenCode calls every export of a plugin file as a plugin, so a helper export would be run as one."""
+def test_plugin_files_serve_both_opencode_plugin_apis(repo_root, plugin):
+    """One default export: 1.x calls its `server`, 2.x needs `id` and calls `setup`.
+
+    OpenCode 1.x calls every export of a plugin file as a plugin, so a helper export would be run as
+    one. OpenCode 2.x refuses a file without a default `{ id, setup }`.
+    """
     source = (repo_root / ".opencode" / "plugins" / plugin).read_text(encoding="utf-8")
     exports = [line for line in source.splitlines() if line.startswith("export ")]
-    assert len(exports) == 1 and ": Plugin = async" in exports[0]
+    assert exports == ["export default {"]
+    default = source[source.index("export default {") :]
+    assert f'id: "{plugin.removesuffix(".ts")}"' in default
+    assert "server:" in default and "setup:" in default
+    assert "@opencode-ai/plugin" not in source  # its types are 1.x-only; nothing needs them at runtime
 
 
 def test_the_chat_plugin_signs_what_the_guard_verifies(repo_root):
     """The plugin and aegis_guard.chat must agree on the message they sign and the tag's shape."""
     source = (repo_root / ".opencode" / "plugins" / "aegis-chat.ts").read_text(encoding="utf-8")
     assert 'createHmac("sha256", TOKEN).update(`aegis-chat:${chat}`).digest("hex")' in source
-    assert "output.args[TAG_ARG] = `${chat}.${mac}`" in source
+    assert "args[TAG_ARG] = `${chat}.${mac}`" in source
+    # Both APIs go through the same tagging, and 2.x follows forks as well as parents.
+    assert source.count("await tag(") == 2
+    assert "info.parentID ?? info.fork?.sessionID ?? null" in source
     assert 'const TAG_ARG = "_aegis_chat"' in source
 
 
@@ -223,6 +234,29 @@ def test_opencode_host_tools_and_builtin_agents_are_off(repo_root):
     delegating = {name for name, agent in config["agent"].items() if "task" in agent.get("permission", {})}
     assert delegating == {"planner"}
     assert config["agent"]["planner"]["permission"]["task"] == {"*": "deny", "verifier": "allow"}
+
+
+OPENCODE2_CODE_MODE_TOOLS = (
+    "worktree_create",
+    "worktree_remove",
+    "worktree_list",
+    "session_move",
+    "session_rename",
+    "models",
+    "list_mcp_resources",
+    "read_mcp_resource",
+)
+
+
+def test_opencode2_code_mode_tools_are_off(repo_root):
+    """OpenCode 2.x's code-mode `execute` can call OpenCode's own tools, and the permission rules
+    don't cover them: in the W8 audit `worktree_create` ran `git` on the host. They are turned off
+    by name. A `"opencode_*"` wildcard made 2.3.0 hang while loading the config, so each is listed."""
+    config = json.loads((repo_root / "config" / "opencode.json").read_text(encoding="utf-8"))
+    assert {f"opencode_{name}": False for name in OPENCODE2_CODE_MODE_TOOLS}.items() <= config["tools"].items()
+    assert "opencode_*" not in config["tools"]
+    # `fetch` inside code mode is the webfetch permission, which must stay denied.
+    assert config["tools"]["webfetch"] is False and config["permission"]["webfetch"] == "deny"
 
 
 def test_planner_cannot_change_the_workspace(repo_root, code_worker_tools):
