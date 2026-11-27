@@ -223,9 +223,13 @@ OpenCode 1.19.5 browser interface: http://127.0.0.1:4096/
 sign in as user `opencode` with password ...   (also in .aegis/tokens.env)
 ```
 
-Open the address in your browser, and sign in as `opencode` with that password. The server listens
-only on `127.0.0.1`, and the password keeps other programs on your machine out. Stop it with
-Ctrl+C. `--port` picks another port.
+Your browser opens at that address (`--no-browser` leaves it closed). Sign in as `opencode` with
+that password. The server listens only on `127.0.0.1`, and the password keeps other programs on
+your machine out. Stop it with Ctrl+C. `--port` picks another port.
+
+The address you open is an origin check in front of OpenCode, which itself listens on a spare
+port (the launcher prints which). The check refuses requests that other web pages in your
+browser could send there. Always use the address the launcher prints, not OpenCode's own port.
 
 What the command sets up for you:
 - OpenCode uses the Aegis config: only the local models, and only the agents below. Its own file,

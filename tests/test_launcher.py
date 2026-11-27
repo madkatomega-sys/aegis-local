@@ -4,6 +4,7 @@ import subprocess
 import pytest
 
 import aegis
+import aegis_web
 
 
 @pytest.mark.parametrize("name", aegis.list_profiles())
@@ -31,6 +32,10 @@ def test_opencode_loads_the_chat_tag_plugin():
     assert env["AEGIS_CLIENT_TOKEN"] == "token"
 
 
+class Calls(list):
+    """How opencode was started, plus `proxies` and `opened` (what the browser was pointed at)."""
+
+
 @pytest.fixture
 def fake_opencode(monkeypatch, tmp_path):
     """aegis.py with its state in tmp_path and an `opencode` that records how it was started."""
@@ -38,22 +43,53 @@ def fake_opencode(monkeypatch, tmp_path):
     monkeypatch.setattr(aegis, "TOKENS", tmp_path / ".aegis" / "tokens.env")
     monkeypatch.setattr(aegis.shutil, "which", lambda name: "opencode")
     version = {"value": "1.19.5"}
-    calls = []
+    calls = Calls()
     monkeypatch.setattr(aegis, "opencode_version", lambda binary: version["value"])
 
     def fake_call(command, env=None, cwd=None):
         calls.append({"command": command, "env": env, "cwd": cwd})
         return 0
 
+    class FakeServer:
+        def __init__(self, command, env=None, cwd=None):
+            calls.append({"command": command, "env": env, "cwd": cwd})
+
+        def poll(self):
+            return None
+
+        def wait(self, timeout=None):
+            return 0
+
+    class FakeProxy:
+        def __init__(self, public, upstream):
+            proxies.append((public, upstream))
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            proxies.append("stopped")
+
+    proxies: list = []
+    opened: list = []
     monkeypatch.setattr(aegis.subprocess, "call", fake_call)
+    monkeypatch.setattr(aegis.subprocess, "Popen", FakeServer)
+    monkeypatch.setattr(aegis_web, "Proxy", FakeProxy)
+    monkeypatch.setattr(aegis_web, "free_port", lambda: 51234)
+    monkeypatch.setattr(aegis, "port_in_use", lambda host, port: True)
+    monkeypatch.setattr(aegis.webbrowser, "open", opened.append)
+    calls.proxies, calls.opened = proxies, opened
     return calls, version
 
 
-def test_web_starts_the_browser_interface_on_loopback_with_a_password(fake_opencode, tmp_path, capsys):
+def test_web_puts_opencode_behind_the_origin_check_on_loopback(fake_opencode, tmp_path, capsys):
     calls, _ = fake_opencode
     assert aegis.main(["opencode", "--web", str(tmp_path)]) == 0
     (started,) = calls
-    assert started["command"] == ["opencode", "web", "--hostname", "127.0.0.1", "--port", "4096"]
+    # OpenCode serves on a spare loopback port; the user's port is the proxy in front of it.
+    assert started["command"] == ["opencode", "serve", "--hostname", "127.0.0.1", "--port", "51234"]
+    assert calls.proxies == [(4096, 51234), "stopped"]
+    assert calls.opened == ["http://127.0.0.1:4096/"]  # the browser opens the proxy, never OpenCode's port
     assert started["cwd"] == tmp_path.resolve()
     env = started["env"]
     password = env["OPENCODE_SERVER_PASSWORD"]
@@ -71,7 +107,15 @@ def test_web_starts_the_browser_interface_on_loopback_with_a_password(fake_openc
 def test_web_takes_a_port(fake_opencode, tmp_path):
     calls, _ = fake_opencode
     aegis.main(["opencode", "--web", "--port", "4300", str(tmp_path)])
-    assert calls[0]["command"][-2:] == ["--port", "4300"]
+    assert calls.proxies[0] == (4300, 51234)
+    assert calls.opened == ["http://127.0.0.1:4300/"]
+
+
+def test_web_can_leave_the_browser_closed(fake_opencode, tmp_path):
+    calls, _ = fake_opencode
+    assert aegis.main(["opencode", "--web", "--no-browser", str(tmp_path)]) == 0
+    assert calls.opened == []
+    assert calls.proxies == [(4096, 51234), "stopped"]
 
 
 @pytest.mark.parametrize("version", ["2.3.0", "", "unknown"])

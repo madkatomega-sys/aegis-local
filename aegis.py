@@ -42,6 +42,7 @@ import time
 import tomllib
 import urllib.error
 import urllib.request
+import webbrowser
 from pathlib import Path
 from typing import Any
 
@@ -943,11 +944,41 @@ def cmd_opencode(args: argparse.Namespace) -> int:
     home = STATE / "opencode-web"
     for name in ("CONFIG", "DATA", "STATE", "CACHE"):
         env[f"XDG_{name}_HOME"] = str(home / name.lower())
-    print(f"OpenCode {version} browser interface: http://127.0.0.1:{args.port}/")
+    # OpenCode listens on a spare loopback port; the user's port is an origin-checking proxy in front
+    # of it (aegis_web.py), because OpenCode's server doesn't check where a request comes from.
+    # `serve` serves the same page as `web` but doesn't open a browser on its own port.
+    import aegis_web
+
+    internal = aegis_web.free_port()
+    url = f"http://127.0.0.1:{args.port}/"
+    try:
+        proxy = aegis_web.Proxy(args.port, internal)
+    except OSError as exc:
+        die(f"can't listen on 127.0.0.1:{args.port} ({exc}); pick another with --port")
+    print(f"OpenCode {version} browser interface: {url}")
     print(f"sign in as user `opencode` with password {password}   (also in .aegis/tokens.env)")
     print(f"project folder: {project}   stop with Ctrl+C")
-    command = [binary, "web", "--hostname", "127.0.0.1", "--port", str(args.port)]
-    return subprocess.call(command, env=env, cwd=project)
+    print(f"(OpenCode itself listens on 127.0.0.1:{internal}, behind an origin check on {args.port})")
+    sys.stdout.flush()
+    command = [binary, "serve", "--hostname", "127.0.0.1", "--port", str(internal)]
+    with proxy:
+        server = subprocess.Popen(command, env=env, cwd=project)
+        try:
+            if not args.no_browser:
+                for _ in range(60):
+                    if server.poll() is not None or port_in_use("127.0.0.1", internal):
+                        break
+                    time.sleep(0.5)
+                if server.poll() is None:
+                    webbrowser.open(url)
+            return server.wait()
+        except KeyboardInterrupt:
+            server.terminate()
+            try:
+                return server.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                server.kill()
+                return 130
 
 
 def cmd_env(args: argparse.Namespace) -> int:
@@ -1014,6 +1045,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("project", nargs="?")
     p.add_argument("--web", action="store_true", help="open OpenCode's browser interface on 127.0.0.1 (OpenCode 1.x)")
     p.add_argument("--port", type=int, default=4096, help="port for --web (default 4096)")
+    p.add_argument("--no-browser", action="store_true", help="with --web, don't open a browser")
     p.set_defaults(func=cmd_opencode)
 
     sub.add_parser("env", help="print shell lines exporting the client token").set_defaults(func=cmd_env)

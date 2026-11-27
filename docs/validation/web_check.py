@@ -3,7 +3,9 @@
 Starts the launcher's OpenCode web server and drives it through the HTTP API the browser page
 uses, then checks what a user would see and what the guard recorded:
 - the server listens on loopback only, and wants its password;
-- how it answers a cross-site request that carries the password (as a signed-in browser would);
+- the origin check in front of it refuses a cross-site request that carries the password (as a
+  signed-in browser would send it), a rebound host name, and a cross-site WebSocket, and OpenCode's
+  own port wants the password;
 - two Builder chats: the first fixes the sample project, the second runs its tests;
 - the guard ledger holds each chat's calls under its own session;
 - the chat titles are short titles, not reasoning;
@@ -23,6 +25,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -156,13 +159,13 @@ def main() -> int:
     log(f"OpenCode {version}")
 
     sample = Path(args.sample_repo).resolve()
-    log(f"\n$ python aegis.py opencode --web <sample repo> --port {args.port}")
+    log(f"\n$ python aegis.py opencode --web <sample repo> --port {args.port} --no-browser")
     server_log = aegis.STATE / "web-check-server.log"
     server_log.parent.mkdir(parents=True, exist_ok=True)
     password = ""
     with server_log.open("w", encoding="utf-8") as sink:
         server = subprocess.Popen(  # noqa: S603
-            [PY, "aegis.py", "opencode", "--web", str(sample), "--port", str(args.port)],
+            [PY, "aegis.py", "opencode", "--web", str(sample), "--port", str(args.port), "--no-browser"],
             cwd=ROOT,
             env=env,
             stdout=sink,
@@ -205,7 +208,26 @@ def main() -> int:
         status, _, _ = web.raw("POST", "/session", b"{}", {**evil, "Content-Type": "text/plain"})
         created = len(web.api("GET", "/session")) - before
         log(f"  a 'simple' cross-site POST /session (text/plain): HTTP {status}, sessions created: {created}")
-        log("  (recorded, not judged: a browser sends this without a preflight, but can't read the reply)")
+        smoke.check("the cross-site POST is refused, and no session is created", status == 403 and created == 0)
+        status, _, _ = web.raw("GET", "/session", headers={"Host": "evil.example:4097", "Authorization": web.auth})
+        smoke.check("a request under another host name (DNS rebinding) is refused", status == 403, str(status))
+        ws = {
+            "Upgrade": "websocket",
+            "Connection": "Upgrade",
+            "Sec-WebSocket-Key": "eA==",
+            "Sec-WebSocket-Version": "13",
+        }
+        status, _, _ = web.raw("GET", "/pty", headers={**evil, **ws})
+        smoke.check("a cross-site WebSocket is refused", status == 403, str(status))
+        internal = re.search(r"OpenCode itself listens on 127\.0\.0\.1:(\d+)", server_log.read_text(encoding="utf-8"))
+        smoke.check("the launcher says where OpenCode itself listens", bool(internal))
+        if internal:
+            direct = Web(int(internal.group(1)), password)
+            status, _, _ = direct.raw("POST", "/session", b"{}", {"Origin": "http://attacker.example"})
+            log(f"  straight to OpenCode's own port {internal.group(1)}, without the password: HTTP {status}")
+            smoke.check(
+                "OpenCode's own port wants the password, which the browser only holds for the proxy", status == 401
+            )
 
         log("\n## Two Builder chats")
         toasts: list[dict] = []

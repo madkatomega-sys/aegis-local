@@ -114,6 +114,7 @@ profile names two files from [config/models.toml](config/models.toml), pinned by
 ```text
 aegis-local/
 ├── aegis.py                  Cross-platform launcher (standard library only)
+├── aegis_web.py              Origin check in front of OpenCode's browser server
 ├── docker-compose.yml        Router, guard proxy, and sandboxes
 ├── .env.example              Backend, profile, and token settings
 ├── config/
