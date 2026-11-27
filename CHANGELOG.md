@@ -6,6 +6,17 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `models get --only tier0|tier1` fetches and sets one tier's file. `models get --max-gb N`
+  refuses, before downloading anything, if the files still missing add up to more than `N` GB.
+- `docs/validation/model_check.py`, the release check for the model helper (0.3's E9 as a
+  script). It runs the helper from a separate checkout, so the main `.env` is never touched, and it
+  hard-links files you already have instead of downloading them. Every download goes through
+  `--max-gb`. It stops before downloading anything if a setup step fails. In 0.3, a failed shell
+  link meant E9 downloaded 7.36 GB more than was approved. The script also removes only the
+  folders it created itself.
+
 ### Changed
 
 - The code worker, the math-physics worker and the writing auditor run on the mcp 2.x SDK

@@ -125,6 +125,8 @@ For your profile (from `.env`, or the suggested one; `--profile` picks another),
 
 Files already there are hash-checked, not downloaded again. `--tier0` and `--tier1` swap in another
 model from the catalog (`python aegis.py models list` shows them all, and which were measured).
+`--only tier0` (or `tier1`) fetches and sets just that tier's file. `--max-gb N` refuses, before
+downloading anything, if the files still missing add up to more than `N` GB.
 `python aegis.py models verify` re-checks the files `.env` points at.
 
 `config/models.toml` pins every file by repository, name, size and SHA-256, so a file that changes

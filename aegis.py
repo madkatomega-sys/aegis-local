@@ -447,6 +447,8 @@ def cmd_models(args: argparse.Namespace) -> int:
     name = args.profile or cfg.get("AEGIS_PROFILE") or suggested
     profile = load_profile(name)
     plan = model_plan(profile, catalog, {"tier0": args.tier0, "tier1": args.tier1})
+    if args.only:
+        plan = {args.only: plan[args.only]}
     dest_dir = Path(args.dir).expanduser().resolve() if args.dir else MODELS_DIR
     dest_dir.mkdir(parents=True, exist_ok=True)
     todo = []
@@ -464,6 +466,8 @@ def cmd_models(args: argparse.Namespace) -> int:
     free = shutil.disk_usage(dest_dir).free
     if needed > free:
         die(f"needs {needed / 1e9:.1f} GB, but {dest_dir} has {free / 1e9:.1f} GB free")
+    if args.max_gb is not None and needed > args.max_gb * 1e9:
+        die(f"this would download {needed / 1e9:.2f} GB, more than --max-gb {args.max_gb:g}; nothing downloaded")
     if needed and not args.yes:
         try:
             answer = input(f"download {needed / 1e9:.1f} GB? [y/N] ").strip().lower()
@@ -1023,6 +1027,10 @@ def build_parser() -> argparse.ArgumentParser:
     get.add_argument("--dir", help=f"where to put the files (default: {MODELS_DIR.name}/ in this checkout)")
     get.add_argument("--tier0", help="a model id from `models list`, instead of the profile's")
     get.add_argument("--tier1", help="a model id from `models list`, instead of the profile's")
+    get.add_argument("--only", choices=TIERS, help="fetch and set only this tier's file")
+    get.add_argument(
+        "--max-gb", type=float, help="refuse, before downloading anything, if the download would exceed this"
+    )
     get.add_argument("--yes", action="store_true", help="don't ask before downloading")
     models.add_parser("verify", help="check .env's model files against their SHA-256 in config/models.toml")
     p.set_defaults(func=cmd_models)
