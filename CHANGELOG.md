@@ -16,6 +16,8 @@ All notable changes to this project are recorded here. The format follows
   `--max-gb`. It stops before downloading anything if a setup step fails. In 0.3, a failed shell
   link meant E9 downloaded 7.36 GB more than was approved. The script also removes only the
   folders it created itself.
+- `opencode --web --no-browser` doesn't open a browser. The launcher now opens it on the checked
+  port itself, never on OpenCode's own.
 
 ### Changed
 
@@ -27,6 +29,19 @@ All notable changes to this project are recorded here. The format follows
   setup-buildx v4, login v4, metadata v6, build-push v7.
 - Higher minimum versions: fastapi 0.165.0, ruff 0.17.5, sympy 1.14.0, pint 0.25.3 (0.26.2 in
   the math worker).
+
+### Security
+
+- `aegis.py opencode --web` puts an origin check in front of OpenCode's browser server
+  (`aegis_web.py`, standard library only). OpenCode now runs `serve` on a spare loopback port. The
+  port you open refuses:
+  - a `Host` that isn't this port on a loopback name (DNS rebinding);
+  - another site's `Origin`, or, without one, its `Sec-Fetch-Site` or `Referer`;
+  - a POST, PUT, PATCH or DELETE without JSON and without a same-origin `Origin`.
+
+  Everything else passes through, including the password, the event stream and the terminal's
+  WebSocket. In 0.3, a cross-site POST that carried the cached password created a session
+  (0.3.0's E8). It is now refused, and `web_check.py` judges it.
 
 ## [0.3.0] - 2026-11-20
 

@@ -48,6 +48,7 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
 | Overlong or truncated extractions | Extraction schema bounds every field, compiled into the decoding grammar; guard re-validates and caps fields; extractor failure denies the result | Router config, guard |
 | A swapped, truncated, or corrupted model download | `aegis.py models get` downloads only the files in `config/models.toml`, over HTTPS from Hugging Face, and checks each one's size and SHA-256 against the catalog. A file that doesn't match is deleted and nothing is written to `.env`. Files already on disk are hash-checked too | `config/models.toml`, `aegis.py` |
 | Other machines, or other users, reaching OpenCode's browser server | `aegis.py opencode --web` binds it to `127.0.0.1` only and requires a generated password (HTTP basic auth, user `opencode`), kept in `.aegis/tokens.env`. It refuses OpenCode 2.x, whose server it hasn't checked | `aegis.py` |
+| A web page in the same browser driving OpenCode's browser server (cross-site requests, DNS rebinding, cross-site WebSockets) | OpenCode listens on a spare loopback port. The port you open is an origin-checking proxy in front of it, which refuses requests whose `Host` isn't this port on a loopback name, whose `Origin` (or, failing that, `Sec-Fetch-Site` or `Referer`) is another site, or that change state without JSON and without a same-origin `Origin`. The browser holds the password only for the proxy's port, so a page reaching OpenCode's port directly gets a 401 | `aegis_web.py`, `aegis.py` |
 | Tampered release images | Images built only by the release workflow from owner-only tags, signed with Sigstore, with SBOM and provenance | `.github/workflows/release.yml` |
 
 ## How the defenses are tested
@@ -77,8 +78,20 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
 - `tests/test_models.py` checks that every catalog entry is pinned (size and a full SHA-256), and
   runs downloads against a local server: a file whose hash doesn't match is deleted, nothing is
   kept from a failed download, and `.env` isn't changed.
-- `tests/test_launcher.py` checks that `opencode --web` binds to `127.0.0.1`, sets a password,
-  keeps OpenCode's data in a private folder, and refuses OpenCode 2.x.
+- `tests/test_launcher.py` checks that `opencode --web` puts OpenCode behind the proxy on
+  `127.0.0.1`, opens the browser on the proxy's port only, sets a password, keeps OpenCode's data
+  in a private folder, and refuses OpenCode 2.x.
+- `tests/test_web_proxy.py` checks each of the proxy's refusals: other hosts, other origins
+  (including `null`, other ports and `https`), cross-site fetch metadata and referers, and
+  non-JSON state changes without an origin. It drives the proxy against a stand-in for OpenCode:
+  - the password passes through;
+  - the event stream arrives as it's sent;
+  - redirects point at the proxy;
+  - WebSockets are tunnelled both ways, and a cross-site one is refused;
+  - a refused request never reaches OpenCode;
+  - nothing listens on the LAN address.
+- `docs/validation/web_check.py` checks the same refusals against the real OpenCode, and that
+  OpenCode's own port answers 401 without the password.
 
 ## Known limitations
 
@@ -114,16 +127,16 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
   catalog entry was taken from the model maker's repository or a well-known repackager, and
   `llama-server` parses whatever GGUF you give it (see "malicious model weights", out of scope
   above).
-- **The browser server's password lives in the browser too.** Once you sign in, the browser can
-  send it with requests to `127.0.0.1:<port>` that a web page in another tab makes there.
-  OpenCode 1.19.5's server doesn't check where a request comes from. It doesn't let other origins
-  read its replies, but it does act on a "simple" cross-site POST: in the
-  [0.3.0 validation](validation/0.3.0-windows11-rtx4070/README.md#e8-the-browser-interface), one
-  that carried the password created a session. Sending that session a message needs its id, which
-  the page can't read. Some browsers also ask before a public page may reach `127.0.0.1`. Even a
-  request that got further would only reach the agent, whose tools all go through the guard. Use
-  the browser interface in a browser profile you don't browse
-  the web with, and stop it (Ctrl+C) when you're done.
+- **The browser interface trusts the browser to send `Origin`.** In 0.3, OpenCode's server acted
+  on a "simple" cross-site POST that carried the cached password; the
+  [0.3.0 validation](validation/0.3.0-windows11-rtx4070/README.md#e8-the-browser-interface) saw
+  one create a session. Since then the proxy in front of it refuses such requests (see Defenses).
+  The proxy relies on what current browsers send: `Origin` on every cross-site POST and WebSocket
+  handshake, and `Sec-Fetch-Site` on other requests. From a browser that sent neither, a
+  cross-site GET would get through. A POST, PUT, PATCH or DELETE without JSON would still be
+  refused, and one with JSON needs a CORS preflight, which OpenCode doesn't grant to other origins.
+  Even a request that got further would only reach the agent, whose tools all go through the
+  guard. Stop the browser interface (Ctrl+C) when you're done.
 - **Tokens are stored in plain text** in `.aegis/tokens.env` (mode 0600 on Linux; protected by
   the user profile's permissions on Windows). Anyone who can read your home directory can call
   the guard.
