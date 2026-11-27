@@ -272,12 +272,36 @@ The terminal interface works the same way: `python aegis.py opencode ../my-proje
 
 ## 8. The OpenCode desktop app and other clients
 
-**The OpenCode desktop app (2.3.0) doesn't work with Aegis yet.** It reads the Aegis config if you
-start it with the same environment as `aegis.py opencode`, lists only the Aegis models and agents,
-and connects to the guard. But every request then hangs: the model answers within seconds, and the
-app never records or acts on the reply. The same OpenCode build works in its `--standalone` mode,
-so the problem is in the background service the desktop app always uses. Until that changes, use
-the browser interface above.
+**The OpenCode desktop app (2.3.0) isn't supported yet. Use the browser interface above.**
+
+In 0.3 every request through the app seemed to hang. The
+[cause](validation/opencode2-service-2026-11-27-windows11/README.md) is that the app starts
+OpenCode's background service itself, and the service reads `AEGIS_CLIENT_TOKEN` from its own
+environment, not from yours. Without the token the guard refuses the connection, the agent has no
+Aegis tools, and it keeps trying without finishing.
+
+To make the app see the Aegis config and the token, they have to be in the environment the app
+starts with. On Windows that means user environment variables, set once in PowerShell:
+
+```powershell
+python aegis.py env    # prints the three values for this checkout
+[Environment]::SetEnvironmentVariable("OPENCODE_CONFIG", "<value printed above>", "User")
+[Environment]::SetEnvironmentVariable("OPENCODE_CONFIG_DIR", "<value printed above>", "User")
+[Environment]::SetEnvironmentVariable("AEGIS_CLIENT_TOKEN", "<value printed above>", "User")
+```
+
+Then quit the app completely, including its background `opencode-cli` process (check Task
+Manager), and start it again. Undo it by setting each variable to `$null` the same way.
+
+Even then, three things are missing under 2.x, which is why it's not supported yet:
+- **No per-chat guard sessions.** OpenCode 2.x doesn't load the Aegis plugins, because its
+  plugin API changed. So all chats share one guard session, as with 1.x without the plugin.
+- **No status display**, for the same reason.
+- **Code mode isn't re-checked.** 2.x adds a code-mode tool (`execute`) that calls other tools
+  from JavaScript. It hasn't been re-checked against the Aegis lockdown since 0.2.
+
+The token in a user environment variable can be read by any program you run, as
+`.aegis/tokens.env` can.
 
 **Adding Aegis as "just a provider" gives you the models without the protection.** Any client that
 takes an OpenAI-compatible endpoint can use the router, including the desktop app's
