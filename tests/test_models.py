@@ -282,6 +282,40 @@ def test_get_asks_before_downloading(small_catalog, tmp_path, monkeypatch):
     assert FakeHub.requests == []
 
 
+def test_get_only_fetches_and_sets_one_tier(small_catalog, tmp_path, monkeypatch):
+    for key in ("AEGIS_PROFILE", "AEGIS_TIER0_MODEL", "AEGIS_TIER1_MODEL"):
+        monkeypatch.delenv(key, raising=False)
+    models = tmp_path / "models"
+    assert aegis.main(["models", "get", "--dir", str(models), "--only", "tier1", "--yes"]) == 0
+    assert [r["path"] for r in FakeHub.requests] == ["/org/model-GGUF/resolve/main/tier1.gguf"]
+    assert sorted(p.name for p in models.iterdir()) == ["tier1.gguf"]
+    env = aegis.read_env_file(tmp_path / ".env")
+    assert env["AEGIS_TIER1_MODEL"] == (models / "tier1.gguf").as_posix()
+    assert env["AEGIS_TIER0_MODEL"] == ""  # left as it was
+
+
+def test_max_gb_refuses_a_bigger_download_before_fetching(small_catalog, tmp_path, monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda prompt: pytest.fail("asked although the plan was too big"))
+    total = sum(len(data) for data in small_catalog.values())  # both files, as bytes
+    limit = (total - 1) / 1e9
+    with pytest.raises(SystemExit) as refused:
+        aegis.main(["models", "get", "--dir", str(tmp_path / "models"), "--max-gb", f"{limit:.9f}"])
+    assert refused.value.code != 0
+    assert FakeHub.requests == []
+    assert aegis.read_env_file(tmp_path / ".env")["AEGIS_TIER0_MODEL"] == ""
+
+
+def test_max_gb_counts_only_what_is_missing(small_catalog, tmp_path, monkeypatch):
+    for key in ("AEGIS_PROFILE", "AEGIS_TIER0_MODEL", "AEGIS_TIER1_MODEL"):
+        monkeypatch.delenv(key, raising=False)
+    models = tmp_path / "models"
+    models.mkdir()
+    (models / "tier1.gguf").write_bytes(small_catalog["tier1"])  # already here: checked, not fetched
+    limit = len(small_catalog["tier0"]) / 1e9
+    assert aegis.main(["models", "get", "--dir", str(models), "--max-gb", f"{limit:.9f}", "--yes"]) == 0
+    assert [r["path"] for r in FakeHub.requests] == ["/org/model-GGUF/resolve/main/tier0.gguf"]
+
+
 def test_get_refuses_an_unknown_model(small_catalog, tmp_path):
     with pytest.raises(SystemExit):
         aegis.main(["models", "get", "--dir", str(tmp_path / "m"), "--tier1", "not-in-the-catalog", "--yes"])
