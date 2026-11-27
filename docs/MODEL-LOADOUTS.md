@@ -67,9 +67,9 @@ The download is refused unless both the size and the hash match. To add a file:
 3. run `python -m pytest tests/test_models.py`, which checks every entry and every profile's
    `download` ids.
 
-Today only the two `nvidia-12gb` files are marked `measured`. The others are the profiles'
-candidates at their quantization, picked from the model maker's repository or a well-known
-repackager, and are untested.
+Today the `download` files of `nvidia-12gb`, `nvidia-8gb` and `cpu-only` are marked `measured`.
+The others are the profiles' candidates at their quantization, picked from the model maker's
+repository or a well-known repackager, and are untested.
 
 ## Contributing a profile
 

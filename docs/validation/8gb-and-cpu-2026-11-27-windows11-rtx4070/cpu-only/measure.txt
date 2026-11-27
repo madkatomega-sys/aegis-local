@@ -1,0 +1,58 @@
+# W4 measurement: profile cpu-only, 2 run(s) per fixture, 2400 s limit per run
+date: 2026-11-27 10:45; commit 3bb1f00
+tier0: Qwen3.5-4B Q4_K_M (Qwen3.5-4B-Q4_K_M.gguf, sha256 25082a7d…dfa1418c)
+tier1: Qwen3.5-9B Q4_K_M (Qwen3.5-9B-Q4_K_M.gguf, sha256 cd76ec20…f15f2a13)
+llama-server started with CUDA_VISIBLE_DEVICES=-1: it can't see the GPU
+
+GPU memory with no tiers running (the Windows desktop and other programs): 2993 MiB
+
+$ python aegis.py up --profile cpu-only --no-build
+tier0: starting llama-server (pid 832) on 127.0.0.1:8080; log in .aegis/logs/tier0.log
+tier1: starting llama-server (pid 3144) on 127.0.0.1:8081; log in .aegis/logs/tier1.log
+tier0: healthy
+tier1: healthy
+router: http://127.0.0.1:4000/v1    guard: http://127.0.0.1:4100/mcp
+next: python aegis.py opencode   (or run `python aegis.py env` and start opencode yourself)
+
+GPU memory with both tiers loaded, idle: 3015 MiB
+GPU compute processes, idle: (list omitted; it names every program open on the desktop)
+  llama-server on the list: no
+
+$ python evals/run.py run --runs 2 --timeout 2400   (66 min, exit 0)
+.24,<1
+installing into the sandbox's environment (wheels only)
+pace-default-02              fixed                 290 s  2 passed in 0.40s
+nothing to install
+no dependencies declared (looked at requirements*.txt and pyproject.toml); clearing any old ones
+installing into the sandbox's environment (wheels only)
+slug-default-02              fixed                 184 s  3 passed in 0.02s
+
+| Fixture | Arm | Fixed | Edited, tests fail | No edit applied | Never tried to edit | Timed out | Median time |
+|---|---|---|---|---|---|---|---|
+| calc | default | 2/2 | 0 | 0 | 0 | 0 | 244.5 s |
+| cart | default | 2/2 | 0 | 0 | 0 | 0 | 472.5 s |
+| chunks | default | 2/2 | 0 | 0 | 0 | 0 | 528.5 s |
+| median-crlf | default | 2/2 | 0 | 0 | 0 | 0 | 217.5 s |
+| pace | default | 2/2 | 0 | 0 | 0 | 0 | 267 s |
+| slug | default | 2/2 | 0 | 0 | 0 | 0 | 201.5 s |
+
+
+
+## Speeds, from the llama-server log lines written during the runs
+  tier0: generation median 7.2 tok/s over 12 requests (min 2.1, max 9.3); prompt processing median 19.2 tok/s
+  tier1: generation median 4.3 tok/s over 74 requests (min 3.5, max 5.1); prompt processing median 25.3 tok/s
+
+GPU memory peak during the runs: 3642 MiB, of which the desktop baseline was 2993 MiB
+GPU compute processes at the peak: (list omitted; it names every program open on the desktop)
+  llama-server on the list: no
+
+## Eval summary
+| Fixture | Arm | Fixed | Edited, tests fail | No edit applied | Never tried to edit | Timed out | Median time |
+|---|---|---|---|---|---|---|---|
+| calc | default | 2/2 | 0 | 0 | 0 | 0 | 244.5 s |
+| cart | default | 2/2 | 0 | 0 | 0 | 0 | 472.5 s |
+| chunks | default | 2/2 | 0 | 0 | 0 | 0 | 528.5 s |
+| median-crlf | default | 2/2 | 0 | 0 | 0 | 0 | 217.5 s |
+| pace | default | 2/2 | 0 | 0 | 0 | 0 | 267 s |
+| slug | default | 2/2 | 0 | 0 | 0 | 0 | 201.5 s |
+

@@ -41,6 +41,12 @@ extra_args = ["--jinja", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0"]
 
 [measured]
 # Filled in by whoever tests this profile. See docs/MODEL-LOADOUTS.md.
-tier0_tokens_per_second = 0
-tier1_tokens_per_second = 0
+# 2026-11-27, i9-9900K (8 cores), 32 GB RAM, Windows 11, llama.cpp b12361 with the GPU hidden
+# (CUDA_VISIBLE_DEVICES=-1), with the download files above at the ctx above.
+# tier1: Qwen3.5-9B-Q4_K_M.gguf; about 25 tokens/s on prompts.
+# tier0: Qwen3.5-4B-Q4_K_M.gguf; about 19 tokens/s on prompts.
+# Eval results (12/12 fixed, a median of 267 s per run): docs/validation/8gb-and-cpu-2026-11-27-windows11-rtx4070/.
+# Still tested = false until a second person reproduces them.
+tier0_tokens_per_second = 7.2
+tier1_tokens_per_second = 4.3
 peak_vram_gb = 0

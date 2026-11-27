@@ -35,6 +35,7 @@ path = "Qwen3.5-4B-Q6_K.gguf"
 size = 3464055136
 sha256 = "12a6d0136484ecbd85f91860924b1bf571da66e2cebfa507522efc01f9b7d1d9"
 license = "apache-2.0"
+measured = "docs/validation/8gb-and-cpu-2026-11-27-windows11-rtx4070/README.md"
 
 [models."qwen3.5-4b-q4_k_m"]
 name = "Qwen3.5-4B Q4_K_M"
@@ -43,6 +44,7 @@ path = "Qwen3.5-4B-Q4_K_M.gguf"
 size = 2707513696
 sha256 = "25082a7dd3776cc3c741c6347d3bd04523f05796607b3fbc32fa3a25dfa1418c"
 license = "apache-2.0"
+measured = "docs/validation/8gb-and-cpu-2026-11-27-windows11-rtx4070/README.md"
 
 [models."qwen3.5-9b-q8_0"]
 name = "Qwen3.5-9B Q8_0"
@@ -68,6 +70,7 @@ path = "Qwen3.5-9B-Q4_K_M.gguf"
 size = 5627044256
 sha256 = "cd76ec205963b3b33350093e6904d9de16c4e666fd104e1f632d25c7f15f2a13"
 license = "apache-2.0"
+measured = "docs/validation/8gb-and-cpu-2026-11-27-windows11-rtx4070/README.md"
 
 [models."qwen3.5-27b-q4_k_m"]
 name = "Qwen3.5-27B Q4_K_M"
