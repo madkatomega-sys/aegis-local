@@ -30,6 +30,15 @@ All notable changes to this project are recorded here. The format follows
 - Higher minimum versions: fastapi 0.165.0, ruff 0.17.5, sympy 1.14.0, pint 0.25.3 (0.26.2 in
   the math worker).
 
+### Fixed
+
+- The guide's explanation of why the OpenCode 2.3.0 desktop app hangs was wrong. The app starts
+  its background service without `AEGIS_CLIENT_TOKEN`, and the service reads the token from its
+  own environment. So the guard refuses the connection, and the agent loops without Aegis tools.
+  GUIDE §8 now says how to give the app that environment, and what's still missing under 2.x:
+  OpenCode 2.x doesn't load the Aegis plugins. The investigation and a draft upstream report are
+  in `docs/validation/opencode2-service-2026-11-27-windows11/`.
+
 ### Security
 
 - `aegis.py opencode --web` puts an origin check in front of OpenCode's browser server

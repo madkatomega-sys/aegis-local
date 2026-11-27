@@ -119,9 +119,11 @@ triggers. (The sandbox limits the damage such weights could do, but detecting th
   - **What still carries over:** files. An agent in a tainted chat can write instructions into the
     workspace that a later chat reads (see the next item).
   - **What it doesn't depend on:** the model can't forge a tag, because it never sees the client
-    token, and the guard refuses a tag that doesn't verify. Without the plugin, or in OpenCode
-    2.x's code mode, where tools are called from JavaScript the plugin doesn't see, calls carry no
-    tag and share the connection's session, as in 0.2.
+    token, and the guard refuses a tag that doesn't verify. Without the plugin, calls carry no
+    tag and share the connection's session, as in 0.2. Under OpenCode 2.x that is always the case:
+    its plugin API changed, and 2.3.0 refuses to load the Aegis plugins at all
+    ([W6](validation/opencode2-service-2026-11-27-windows11/README.md#also-found-the-aegis-plugins-dont-load-in-opencode-2x)).
+    Its code mode, which calls tools from JavaScript, would bypass a plugin anyway.
 - **A pinned model file is trusted as it was when it was pinned.** The hash stops a file from
   changing under its name; it says nothing about whether the file was safe to begin with. Each
   catalog entry was taken from the model maker's repository or a well-known repackager, and

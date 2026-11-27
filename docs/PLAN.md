@@ -331,7 +331,7 @@ One more item is open:
 
 | Item | Status |
 |---|---|
-| The OpenCode 2.x desktop app | **Open.** Its built-in server (`opencode-cli serve --service`, 2.3.0) hangs on every turn with this stack, while the same binary run standalone works. `aegis.py opencode --web` uses OpenCode 1.19.5 instead ([GUIDE.md](GUIDE.md#8-the-opencode-desktop-app-and-other-clients)) |
+| The OpenCode 2.x desktop app | **Open, cause found.** Its background service reads `AEGIS_CLIENT_TOKEN` from its own environment, which the app starts without, so the guard refuses it and every request loops without tools ([evidence](validation/opencode2-service-2026-11-27-windows11/README.md)). Also, 2.x doesn't load the Aegis plugins. `aegis.py opencode --web` uses OpenCode 1.19.5 instead ([GUIDE.md](GUIDE.md#8-the-opencode-desktop-app-and-other-clients)); see W8 below |
 
 ### The plan for 0.4: hardening and breadth
 
@@ -362,8 +362,19 @@ maintainer can provide are marked **(needs you)**.
 | W5 | **The Linux launcher under WSL2 (needs you: one Docker Desktop setting).** The GPU is visible in WSL Ubuntu (`nvidia-smi` sees the RTX 4070), but Docker isn't reachable there until Docker Desktop's WSL integration is turned on for Ubuntu. With it on, run `aegis.py doctor`, `up` and the walkthrough from Ubuntu, with a Linux CUDA build of llama-server (a download). This exercises the Linux launch path and its bridge-address binding. | Evidence under `docs/validation/`. The plan's "native Linux" item is split: Linux launcher, done under WSL2; bare-metal Linux, still open. WSL2's network is NAT'd, so the LAN check isn't the same as on a real Linux host, and the evidence says so. | M |
 | W6 | **The OpenCode 2.x hang, time-boxed to one day.** Reduce the hang in `serve --service` to the smallest setup that shows it, with and without the Aegis config, and report it upstream with the reproduction. If 2.x's standalone `opencode serve` works, consider `--web` support for 2.x behind W1's proxy. | An upstream issue with the reproduction, linked from GUIDE section 8, and a decision: support 2.x in 0.4, or wait for a fix upstream. | S–M |
 | W7 | **The GitHub upstream with a real token (needs you: a fine-grained token).** Run the walkthrough's GitHub steps against the hosted endpoint, read-only on a scratch repository. | Evidence, and the plan's deferred item closed. | S |
+| W8 | **OpenCode 2.x support, if 0.4 has room (found by W6).** Two parts. First, plugins for 2.x's API, which wants a default export with an `id` and a `setup` or `effect`; 1.x calls every export as a plugin, so each version needs its own file. Second, a fresh look at 2.x's code-mode tool `execute`, which calls OpenCode's own tools from JavaScript; one call returned the worktree list. | Chat tags and the status display work under 2.x. The tools reachable through `execute`, for each agent, are listed in the evidence and match the lockdown. `opencode --web` may then accept 2.x. | M |
 
 Sizes: S is up to half a day, M one to two days.
+
+**Progress:**
+- **W1 and W3 are done** (#60, #59).
+- **W6 is done:**
+  - The "hang" is the token missing from the environment of the background service, which the
+    desktop app starts itself. Without it the guard refuses the connection, and the agent loops
+    without Aegis tools ([evidence](validation/opencode2-service-2026-11-27-windows11/README.md)).
+  - GUIDE §8 now says how to give the app that environment, and what's still missing under 2.x.
+  - The upstream report is drafted, for the maintainer to file.
+  - Decision: 2.x stays unsupported in 0.4, unless W8 gets done.
 
 #### Order
 
