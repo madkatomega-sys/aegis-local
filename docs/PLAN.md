@@ -385,6 +385,18 @@ Sizes: S is up to half a day, M one to two days.
   - The desktop app is now **experimental**, not unsupported. It still has no status display (2.x
     gives toasts only to GUI and TUI plugins), and it hasn't been through the release checks.
   - `opencode --web` stays on 1.x.
+- **W4 is done, with fewer runs than planned:**
+  - `nvidia-8gb` fixed 17 of 18 eval runs. Its tier 1 ran at about 49 tokens/s on the GPU
+    ([evidence](validation/8gb-and-cpu-2026-11-27-windows11-rtx4070/README.md)).
+  - The 8 GB fit is shown by the tiers' own memory, about 6.1 GB, not by the whole card. The card
+    peaked at 9.4 GB, because this desktop used 3.2 GB on its own.
+  - `cpu-only` fixed 12 of 12, with a median of 267 s per run.
+  - Runs: 3 of each fixture on `nvidia-8gb` and 2 on `cpu-only`, not 5, to keep the CPU run near
+    an hour.
+  - Both profiles' `[measured]` blocks and their catalog files are filled in. They stay
+    `tested = false`.
+  - Found along the way: the eval's `manifest.json` takes the profile name from `.env`, not from
+    the running stack.
 
 #### Order
 

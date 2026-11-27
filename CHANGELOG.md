@@ -22,6 +22,12 @@ All notable changes to this project are recorded here. The format follows
   object, with `server` for 1.x and `id` and `setup` for 2.x. Under 2.3.0, chat tags cover
   code-mode calls, forks (which share their source chat's guard session) and subagents. The status
   display doesn't work under 2.x yet: 2.x gives toasts only to GUI and TUI plugins.
+- Measured numbers for `nvidia-8gb` and `cpu-only`, both from an RTX 4070 machine. `nvidia-8gb`
+  fixed 17 of 18 eval runs, and its tiers took about 6.1 GB of GPU memory. `cpu-only` fixed 12 of
+  12, at a median of 267 s per run. They are in each profile's `[measured]` block, the evidence
+  is in `docs/validation/8gb-and-cpu-2026-11-27-windows11-rtx4070/`, and the catalog marks
+  Qwen3.5-4B Q6_K, Qwen3.5-4B Q4_K_M and Qwen3.5-9B Q4_K_M as `measured`. Both profiles stay
+  `tested = false`.
 
 ### Changed
 

@@ -1,0 +1,10 @@
+diff --git a/stats.py b/stats.py
+index 2296e0f..87fbdab 100644
+--- a/stats.py
++++ b/stats.py
+@@ -4,4 +4,4 @@ def median(values):
+     middle = len(ordered) // 2
+     if len(ordered) % 2:
+         return ordered[middle]
+-    return (ordered[middle - 1] + ordered[middle]) / 3
++    return (ordered[middle - 1] + ordered[middle]) / 2

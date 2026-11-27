@@ -52,9 +52,17 @@ Then pick the profile in `config/profiles/` that matches (`python aegis.py profi
 | Intel Arc 12 GB / 16 GB | `intel-arc-12gb` / `intel-arc-16gb` | SYCL or Vulkan |
 | No usable GPU | `cpu-only` | CPU |
 
-Only `nvidia-12gb` has measured results so far
-([evidence](validation/12gb-tier1-2026-11-17-windows11-rtx4070/README.md)). The other profiles are
-reasoned starting points: they should work, but nobody has reported numbers yet.
+Three profiles have measured results so far, all on one RTX 4070 machine:
+
+| Profile | Fixed in the eval suite | Tier 1 speed | Evidence |
+|---|---|---|---|
+| `nvidia-12gb` | 14/15 | about 51 tokens/s | [12 GB](validation/12gb-tier1-2026-11-17-windows11-rtx4070/README.md) |
+| `nvidia-8gb` | 17/18 | about 49 tokens/s; the tiers take about 6.1 GB of GPU memory | [8 GB and CPU](validation/8gb-and-cpu-2026-11-27-windows11-rtx4070/README.md) |
+| `cpu-only` | 12/12, about four times slower per run | about 4 tokens/s | [8 GB and CPU](validation/8gb-and-cpu-2026-11-27-windows11-rtx4070/README.md) |
+
+The 8 GB numbers come from a 12 GB card; on a real 8 GB card, the desktop gets about 1.9 GB, so
+close heavy programs. The other profiles are reasoned starting points: they should work, but
+nobody has reported numbers yet. All stay `tested = false` until a second person reproduces them.
 
 ## 2. Install the prerequisites
 

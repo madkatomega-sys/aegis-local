@@ -1,0 +1,30 @@
+diff --git a/slug.py b/slug.py
+new file mode 100644
+index 0000000..c5de7f6
+--- /dev/null
++++ b/slug.py
+@@ -0,0 +1,24 @@
++def slugify(text):
++    """Convert text to a URL-safe slug.
++    
++    - Lowercase the text
++    - Replace non-alphanumeric characters with hyphens
++    - Collapse multiple consecutive hyphens into one
++    - Trim leading and trailing hyphens
++    """
++    import re
++    
++    # Lowercase
++    text = text.lower()
++    
++    # Replace non-alphanumeric characters (except hyphens) with hyphens
++    text = re.sub(r'[^a-z0-9-]', '-', text)
++    
++    # Collapse multiple hyphens into one
++    text = re.sub(r'-+', '-', text)
++    
++    # Trim leading and trailing hyphens
++    text = text.strip('-')
++    
++    return text
++

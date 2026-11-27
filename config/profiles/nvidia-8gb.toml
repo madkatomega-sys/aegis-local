@@ -41,6 +41,13 @@ extra_args = ["--jinja", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0"]
 
 [measured]
 # Filled in by whoever tests this profile. See docs/MODEL-LOADOUTS.md.
-tier0_tokens_per_second = 0
-tier1_tokens_per_second = 0
-peak_vram_gb = 0
+# 2026-11-27, on an RTX 4070 12 GB (not an 8 GB card), i9-9900K, Windows 11, llama.cpp b12361 CUDA,
+# with the download files above at the ctx above.
+# tier1: Qwen3.5-9B-Q4_K_M.gguf on the GPU; about 520 tokens/s on prompts.
+# tier0: Qwen3.5-4B-Q6_K.gguf on the CPU; about 13 tokens/s on prompts.
+# peak_vram_gb is the two tiers alone (peak minus the desktop's own use), which leaves about 1.9 GB
+# of an 8 GB card for the desktop. Eval results (17/18 fixed): docs/validation/8gb-and-cpu-2026-11-27-windows11-rtx4070/.
+# Still tested = false until a second person reproduces them, on an 8 GB card.
+tier0_tokens_per_second = 5.0
+tier1_tokens_per_second = 49.3
+peak_vram_gb = 6.1

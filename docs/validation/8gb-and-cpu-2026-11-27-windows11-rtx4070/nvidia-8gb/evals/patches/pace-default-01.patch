@@ -1,0 +1,10 @@
+diff --git a/pace.py b/pace.py
+index 9335aea..4ca248a 100644
+--- a/pace.py
++++ b/pace.py
+@@ -6,4 +6,4 @@ ureg = UnitRegistry()
+ def pace(distance_km, minutes):
+     """Running pace in minutes per kilometre."""
+     speed = (distance_km * ureg.kilometer) / (minutes * ureg.minute)
+-    return (1 / speed).to(ureg.minute / ureg.mile).magnitude
++    return (1 / speed).magnitude

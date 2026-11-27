@@ -39,10 +39,13 @@ def test_every_profile_can_be_downloaded(name):
         assert profile["tiers"][tier]["download"] in catalog, (name, tier)
 
 
-def test_the_12gb_profile_downloads_what_was_measured():
-    plan = aegis.model_plan(aegis.load_profile("nvidia-12gb"), aegis.load_catalog(), {})
+@pytest.mark.parametrize("name", ["nvidia-12gb", "nvidia-8gb", "cpu-only"])
+def test_measured_profiles_download_what_was_measured(name):
+    profile = aegis.load_profile(name)
+    plan = aegis.model_plan(profile, aegis.load_catalog(), {})
     catalog = aegis.load_catalog()
     assert all("measured" in catalog[model_id] for model_id in plan.values())
+    assert profile["measured"]["tier1_tokens_per_second"] > 0
 
 
 # -- detection and suggestions ---------------------------------------------------------------
